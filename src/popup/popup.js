@@ -60,7 +60,6 @@ init();
 function init() {
   try {
     bindEvents();
-    renderSkeleton();
     loadSettings().then(() => {
       state.statusFilter = state.settings.defaultStatusFilter || "all";
       updateFilterUI();

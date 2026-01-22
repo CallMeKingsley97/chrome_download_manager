@@ -101,7 +101,14 @@ function bindEvents() {
   });
   elements.menuButton.addEventListener("click", (event) => {
     event.stopPropagation();
-    toggleMenu();
+    event.preventDefault();
+    // 直接切换菜单状态，避免事件冒泡导致自动打开
+    const isHidden = elements.menuPanel.classList.contains("hidden");
+    if (isHidden) {
+      elements.menuPanel.classList.remove("hidden");
+    } else {
+      elements.menuPanel.classList.add("hidden");
+    }
   });
   elements.menuPanel.addEventListener("click", (event) => {
     const action = event.target.dataset.action;
@@ -288,7 +295,8 @@ function renderList(items) {
 
     const title = document.createElement("div");
     title.className = "file-title";
-    title.title = getFileName(item);
+    // 悬停时显示完整绝对路径，正常只显示文件名
+    title.title = item.filename || "";
     title.innerHTML = highlightMatch(getFileName(item), state.searchText);
 
     const status = document.createElement("span");
@@ -462,18 +470,50 @@ async function cancelDownload(item) {
 }
 
 async function removeDownload(item) {
-  const confirmed = window.confirm("确认移除该下载记录？");
-  if (!confirmed) {
-    return;
+  // 创建自定义选择对话框，区分仅移除记录和删除磁盘文件
+  const choice = await showRemoveDialog(item);
+  if (choice === null) {
+    return; // 用户取消
   }
   try {
-    await chromeDownloadsErase({ id: item.id });
-    showToast("已移除下载记录", state.settings.undoRemove, () => undoRemove(item));
+    if (choice === "delete_file" && item.state === "complete") {
+      // 同时删除磁盘文件和记录
+      await chromeDownloadsRemoveFile(item.id);
+      showToast("已删除文件和记录", false);
+    } else {
+      // 仅移除记录
+      await chromeDownloadsErase({ id: item.id });
+      showToast("已移除下载记录", state.settings.undoRemove, () => undoRemove(item));
+    }
     loadDownloads();
   } catch (error) {
-    console.error("移除记录失败", error);
-    showToast("移除记录失败", false);
+    console.error("移除失败", error);
+    showToast("移除失败", false);
   }
+}
+
+function showRemoveDialog(item) {
+  return new Promise((resolve) => {
+    const isComplete = item.state === "complete";
+    const message = isComplete
+      ? "选择移除方式:\n\n[1] 仅移除记录\n[2] 删除文件并移除记录\n\n输入 1 或 2，取消请按 Esc"
+      : "确认移除该下载记录？";
+
+    if (!isComplete) {
+      const confirmed = window.confirm(message);
+      resolve(confirmed ? "remove_record" : null);
+      return;
+    }
+
+    const input = window.prompt(message, "1");
+    if (input === null) {
+      resolve(null);
+    } else if (input === "2") {
+      resolve("delete_file");
+    } else {
+      resolve("remove_record");
+    }
+  });
 }
 
 async function undoRemove(item) {
@@ -550,7 +590,8 @@ function fileTypeLabel(type) {
 
 function getFileName(item) {
   if (item.filename) {
-    const parts = item.filename.split("/");
+    // 兼容 Windows 反斜杠和 Unix 正斜杠路径分隔符
+    const parts = item.filename.split(/[\\/]/);
     return parts[parts.length - 1] || "未知文件";
   }
   const url = item.finalUrl || item.url || "";
@@ -888,6 +929,36 @@ function chromeRuntimeOpenOptions() {
       });
     } catch (error) {
       console.error("openOptionsPage 异常", error);
+      reject(error);
+    }
+  });
+}
+
+function chromeDownloadsRemoveFile(id) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!chromeApi || !chromeApi.downloads) {
+        reject(new Error("下载 API 不可用"));
+        return;
+      }
+      chromeApi.downloads.removeFile(id, () => {
+        const error = chromeApi.runtime.lastError;
+        if (error) {
+          console.error("downloads.removeFile 失败", error.message);
+          reject(error);
+          return;
+        }
+        // 删除文件后，也需要移除记录
+        chromeApi.downloads.erase({ id: id }, () => {
+          const eraseError = chromeApi.runtime.lastError;
+          if (eraseError) {
+            console.warn("erase 失败", eraseError.message);
+          }
+          resolve();
+        });
+      });
+    } catch (error) {
+      console.error("downloads.removeFile 异常", error);
       reject(error);
     }
   });

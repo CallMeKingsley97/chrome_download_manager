@@ -593,6 +593,10 @@ body {
   -webkit-backdrop-filter: blur(20px);
 }
 
+.toast.hidden {
+  display: none !important;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

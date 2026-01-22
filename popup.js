@@ -27,6 +27,8 @@ const elements = {
   typeFilters: document.getElementById("typeFilters"),
   menuButton: document.getElementById("menuButton"),
   menuPanel: document.getElementById("menuPanel"),
+  downloadIndicator: document.getElementById("downloadIndicator"),
+  downloadIndicatorText: document.getElementById("downloadIndicatorText"),
   downloadList: document.getElementById("downloadList"),
   emptyState: document.getElementById("emptyState"),
   resetFilters: document.getElementById("resetFilters"),
@@ -98,10 +100,12 @@ function bindEvents() {
     updateFilterUI();
     applyFilters();
   });
-  elements.menuButton.addEventListener("click", () => {
-    elements.menuPanel.classList.toggle("hidden");
+  elements.menuButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleMenu();
   });
   elements.menuPanel.addEventListener("click", (event) => {
+    event.stopPropagation();
     const action = event.target.dataset.action;
     if (!action) {
       return;
@@ -112,14 +116,17 @@ function bindEvents() {
     clearSearch();
   });
   document.addEventListener("click", (event) => {
-    if (!elements.menuPanel.contains(event.target) && event.target !== elements.menuButton) {
-      elements.menuPanel.classList.add("hidden");
+    if (!event.target.closest(".more-menu")) {
+      closeMenu();
     }
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "/" && document.activeElement !== elements.searchInput) {
       event.preventDefault();
       elements.searchInput.focus();
+    }
+    if (event.key === "Escape") {
+      closeMenu();
     }
   });
 
@@ -168,16 +175,17 @@ async function loadDownloads() {
       return;
     }
     state.loading = true;
-    elements.skeleton.classList.remove("hidden");
+    elements.skeleton.classList.add("hidden");
     elements.emptyState.classList.add("hidden");
     elements.downloadList.innerHTML = "";
     if (state.skeletonTimer) {
       clearTimeout(state.skeletonTimer);
     }
     state.skeletonTimer = setTimeout(() => {
-      state.loading = false;
-      elements.skeleton.classList.add("hidden");
-    }, 400);
+      if (state.loading) {
+        elements.skeleton.classList.remove("hidden");
+      }
+    }, 300);
 
     const items = await chromeDownloadsSearch({
       orderBy: ["-startTime"],
@@ -189,10 +197,11 @@ async function loadDownloads() {
     console.error("加载下载列表失败", error);
     showToast("加载下载列表失败", false);
   } finally {
-    setTimeout(() => {
-      state.loading = false;
-      elements.skeleton.classList.add("hidden");
-    }, 450);
+    state.loading = false;
+    if (state.skeletonTimer) {
+      clearTimeout(state.skeletonTimer);
+    }
+    elements.skeleton.classList.add("hidden");
   }
 }
 
@@ -238,6 +247,7 @@ function applyFilters() {
     const domain = getDomain(item).toLowerCase();
     return fileName.includes(keyword) || domain.includes(keyword);
   });
+  updateDownloadIndicator();
   renderList(filtered);
 }
 
@@ -338,6 +348,17 @@ function renderList(items) {
   });
 }
 
+function updateDownloadIndicator() {
+  const downloadingCount = state.downloads.filter((item) => item.state === "downloading").length;
+  if (downloadingCount > 0) {
+    elements.downloadIndicator.classList.remove("hidden");
+    elements.downloadIndicatorText.innerHTML = `正在下载 <span class="count">${downloadingCount}</span> 项`;
+  } else {
+    elements.downloadIndicator.classList.add("hidden");
+    elements.downloadIndicatorText.textContent = "正在下载";
+  }
+}
+
 function buildActionButton(label, variant, onClick) {
   const button = document.createElement("button");
   button.className = `action-button ${variant}`.trim();
@@ -352,7 +373,7 @@ function buildActionButton(label, variant, onClick) {
 }
 
 function handleMenuAction(action) {
-  elements.menuPanel.classList.add("hidden");
+  closeMenu();
   if (action === "open-downloads") {
     openDownloadsPage();
     return;
@@ -368,6 +389,14 @@ function handleMenuAction(action) {
   if (action === "clear-failed") {
     clearByState("interrupted", "失败记录已清理");
   }
+}
+
+function toggleMenu() {
+  elements.menuPanel.classList.toggle("hidden");
+}
+
+function closeMenu() {
+  elements.menuPanel.classList.add("hidden");
 }
 
 async function openDownloadsPage() {
@@ -476,7 +505,7 @@ function highlightMatch(text, keyword) {
     return escapeHtml(text);
   }
   const escapedText = escapeHtml(text);
-  const escapedKeyword = escapeHtml(keyword);
+  const escapedKeyword = escapeRegExp(keyword);
   const regex = new RegExp(escapedKeyword, "ig");
   return escapedText.replace(regex, (match) => `<mark>${match}</mark>`);
 }
@@ -488,6 +517,10 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function escapeRegExp(text) {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function detectFileType(item) {

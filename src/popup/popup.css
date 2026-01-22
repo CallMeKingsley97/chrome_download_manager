@@ -239,7 +239,7 @@ body {
   .content::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
   }
-  
+
   .content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
@@ -480,11 +480,16 @@ body {
   animation: slideDown 0.2s ease;
 }
 
+.menu-panel.hidden {
+  display: none !important;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
     transform: translateY(-8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -528,12 +533,10 @@ body {
 
 .skeleton-card {
   height: 80px;
-  background: linear-gradient(
-    90deg,
-    rgba(0, 0, 0, 0.03),
-    rgba(0, 0, 0, 0.06),
-    rgba(0, 0, 0, 0.03)
-  );
+  background: linear-gradient(90deg,
+      rgba(0, 0, 0, 0.03),
+      rgba(0, 0, 0, 0.06),
+      rgba(0, 0, 0, 0.03));
   border-radius: 16px;
   animation: shimmer 1.5s infinite;
   background-size: 200% 100%;
@@ -541,12 +544,10 @@ body {
 
 @media (prefers-color-scheme: dark) {
   .skeleton-card {
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.1),
-      rgba(255, 255, 255, 0.05)
-    );
+    background: linear-gradient(90deg,
+        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.1),
+        rgba(255, 255, 255, 0.05));
     background-size: 200% 100%;
   }
 }
@@ -555,17 +556,20 @@ body {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
 }
 
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 0.4;
     transform: scale(1);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.1);
@@ -602,6 +606,7 @@ body {
     opacity: 0;
     transform: translate(-50%, 10px);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, 0);

@@ -757,15 +757,15 @@ function chromeDownloadsShow(id) {
         reject(new Error("下载 API 不可用"));
         return;
       }
-      chromeApi.downloads.show(id, () => {
-        const error = chromeApi.runtime.lastError;
-        if (error) {
-          console.error("downloads.show 失败", error.message);
-          reject(error);
-          return;
-        }
-        resolve();
-      });
+      // chrome.downloads.show() 是同步方法，不接受回调函数
+      chromeApi.downloads.show(id);
+      const error = chromeApi.runtime.lastError;
+      if (error) {
+        console.error("downloads.show 失败", error.message);
+        reject(error);
+        return;
+      }
+      resolve();
     } catch (error) {
       console.error("downloads.show 异常", error);
       reject(error);

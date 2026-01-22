@@ -4,9 +4,16 @@
   "description": "快速管理最近下载任务",
   "version": "0.1.0",
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_title": "下载管理"
   },
-  "permissions": ["downloads", "downloads.open", "storage"],
-  "options_page": "options.html"
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "permissions": [
+    "downloads",
+    "downloads.open",
+    "storage"
+  ],
+  "options_page": "src/options/options.html"
 }

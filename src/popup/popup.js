@@ -105,11 +105,11 @@ function bindEvents() {
     toggleMenu();
   });
   elements.menuPanel.addEventListener("click", (event) => {
-    event.stopPropagation();
     const action = event.target.dataset.action;
     if (!action) {
       return;
     }
+    event.stopPropagation();
     handleMenuAction(action);
   });
   elements.resetFilters.addEventListener("click", () => {
@@ -180,6 +180,7 @@ async function loadDownloads() {
     elements.downloadList.innerHTML = "";
     if (state.skeletonTimer) {
       clearTimeout(state.skeletonTimer);
+      state.skeletonTimer = null;
     }
     state.skeletonTimer = setTimeout(() => {
       if (state.loading) {
@@ -192,14 +193,20 @@ async function loadDownloads() {
       limit: state.settings.listSize
     });
     state.downloads = items || [];
+    state.loading = false;
+    if (state.skeletonTimer) {
+      clearTimeout(state.skeletonTimer);
+      state.skeletonTimer = null;
+    }
+    elements.skeleton.classList.add("hidden");
     applyFilters();
   } catch (error) {
     console.error("加载下载列表失败", error);
     showToast("加载下载列表失败", false);
-  } finally {
     state.loading = false;
     if (state.skeletonTimer) {
       clearTimeout(state.skeletonTimer);
+      state.skeletonTimer = null;
     }
     elements.skeleton.classList.add("hidden");
   }
@@ -599,11 +606,12 @@ function formatTime(timeString) {
   }
   const date = new Date(timeString);
   const now = new Date();
-  const diff = now.getDate() - date.getDate();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   if (now.toDateString() === date.toDateString()) {
     return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
   }
-  if (diff === 1) {
+  if (diffDays === 1) {
     return "昨天";
   }
   return date.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" });

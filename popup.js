@@ -15,9 +15,7 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   loading: true,
   refreshTimer: null,
-  skeletonTimer: null,
-  loadToken: 0,
-  pollTimer: null
+  skeletonTimer: null
 };
 
 const elements = {
@@ -117,15 +115,11 @@ function bindEvents() {
   elements.resetFilters.addEventListener("click", () => {
     clearSearch();
   });
-  document.addEventListener(
-    "pointerdown",
-    (event) => {
-      if (!event.target.closest(".more-menu")) {
-        closeMenu();
-      }
-    },
-    true
-  );
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".more-menu")) {
+      closeMenu();
+    }
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key === "/" && document.activeElement !== elements.searchInput) {
       event.preventDefault();
@@ -175,8 +169,6 @@ async function loadSettings() {
 }
 
 async function loadDownloads() {
-  const token = state.loadToken + 1;
-  state.loadToken = token;
   try {
     if (!chromeApi || !chromeApi.downloads) {
       showToast("请在扩展环境中打开", false);
@@ -190,7 +182,7 @@ async function loadDownloads() {
       clearTimeout(state.skeletonTimer);
     }
     state.skeletonTimer = setTimeout(() => {
-      if (state.loading && state.loadToken === token) {
+      if (state.loading) {
         elements.skeleton.classList.remove("hidden");
       }
     }, 300);
@@ -199,22 +191,17 @@ async function loadDownloads() {
       orderBy: ["-startTime"],
       limit: state.settings.listSize
     });
-    if (state.loadToken !== token) {
-      return;
-    }
     state.downloads = items || [];
     applyFilters();
   } catch (error) {
     console.error("加载下载列表失败", error);
     showToast("加载下载列表失败", false);
   } finally {
-    if (state.loadToken === token) {
-      state.loading = false;
-      if (state.skeletonTimer) {
-        clearTimeout(state.skeletonTimer);
-      }
-      elements.skeleton.classList.add("hidden");
+    state.loading = false;
+    if (state.skeletonTimer) {
+      clearTimeout(state.skeletonTimer);
     }
+    elements.skeleton.classList.add("hidden");
   }
 }
 
@@ -246,8 +233,7 @@ function updateActiveChip(container, value) {
 function applyFilters() {
   const keyword = state.searchText.toLowerCase();
   const filtered = state.downloads.filter((item) => {
-    const itemState = normalizeState(item.state);
-    if (state.statusFilter !== "all" && itemState !== state.statusFilter) {
+    if (state.statusFilter !== "all" && item.state !== state.statusFilter) {
       return false;
     }
     const type = detectFileType(item);
@@ -267,7 +253,6 @@ function applyFilters() {
 
 function renderList(items) {
   elements.downloadList.innerHTML = "";
-  elements.skeleton.classList.add("hidden");
   if (items.length === 0) {
     const isSearchEmpty = Boolean(state.searchText);
     elements.emptyState.classList.remove("hidden");
@@ -301,8 +286,8 @@ function renderList(items) {
     title.innerHTML = highlightMatch(getFileName(item), state.searchText);
 
     const status = document.createElement("span");
-    status.className = `status-pill ${statusClass(displayState)}`;
-    status.textContent = statusLabel(displayState);
+    status.className = `status-pill ${statusClass(item.state)}`;
+    status.textContent = statusLabel(item.state);
 
     const meta = document.createElement("div");
     meta.className = "file-meta";
@@ -316,8 +301,7 @@ function renderList(items) {
 
     main.append(title, status, meta);
 
-    const displayState = normalizeState(item.state);
-    if (displayState === "downloading") {
+    if (item.state === "downloading") {
       const progress = document.createElement("div");
       progress.className = "progress";
       const progressBar = document.createElement("div");
@@ -335,7 +319,7 @@ function renderList(items) {
       main.appendChild(progress);
     }
 
-    if (displayState === "interrupted") {
+    if (item.state === "interrupted") {
       const failed = document.createElement("div");
       failed.className = "file-meta";
       failed.textContent = "下载中断，可尝试重试";
@@ -345,16 +329,16 @@ function renderList(items) {
     const actions = document.createElement("div");
     actions.className = "action-group";
 
-    if (displayState === "complete") {
+    if (item.state === "complete") {
       actions.append(
         buildActionButton("打开", "primary", () => openFile(item)),
         buildActionButton("定位", "", () => showInFolder(item))
       );
     }
-    if (displayState === "interrupted") {
+    if (item.state === "interrupted") {
       actions.append(buildActionButton("重试", "primary", () => retryDownload(item)));
     }
-    if (displayState === "downloading") {
+    if (item.state === "downloading") {
       actions.append(buildActionButton("取消", "danger", () => cancelDownload(item)));
     }
     actions.append(buildActionButton("移除", "", () => removeDownload(item)));
@@ -365,17 +349,13 @@ function renderList(items) {
 }
 
 function updateDownloadIndicator() {
-  const downloadingCount = state.downloads.filter(
-    (item) => normalizeState(item.state) === "downloading"
-  ).length;
+  const downloadingCount = state.downloads.filter((item) => item.state === "downloading").length;
   if (downloadingCount > 0) {
     elements.downloadIndicator.classList.remove("hidden");
     elements.downloadIndicatorText.innerHTML = `正在下载 <span class="count">${downloadingCount}</span> 项`;
-    startPolling();
   } else {
     elements.downloadIndicator.classList.add("hidden");
     elements.downloadIndicatorText.textContent = "正在下载";
-    stopPolling();
   }
 }
 
@@ -417,23 +397,6 @@ function toggleMenu() {
 
 function closeMenu() {
   elements.menuPanel.classList.add("hidden");
-}
-
-function startPolling() {
-  if (state.pollTimer) {
-    return;
-  }
-  state.pollTimer = setInterval(() => {
-    loadDownloads();
-  }, 2000);
-}
-
-function stopPolling() {
-  if (!state.pollTimer) {
-    return;
-  }
-  clearInterval(state.pollTimer);
-  state.pollTimer = null;
 }
 
 async function openDownloadsPage() {
@@ -558,13 +521,6 @@ function escapeHtml(text) {
 
 function escapeRegExp(text) {
   return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function normalizeState(stateValue) {
-  if (stateValue === "in_progress") {
-    return "downloading";
-  }
-  return stateValue || "unknown";
 }
 
 function detectFileType(item) {

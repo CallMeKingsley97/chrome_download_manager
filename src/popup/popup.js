@@ -35,7 +35,12 @@ const elements = {
   skeleton: document.getElementById("skeleton"),
   toast: document.getElementById("toast"),
   toastMessage: document.getElementById("toastMessage"),
-  toastAction: document.getElementById("toastAction")
+  toastAction: document.getElementById("toastAction"),
+  // Modal Elements
+  removeConfirmModal: document.getElementById("removeConfirmModal"),
+  modalBtnRemoveRecord: document.getElementById("modalBtnRemoveRecord"),
+  modalBtnDeleteFile: document.getElementById("modalBtnDeleteFile"),
+  modalBtnCancel: document.getElementById("modalBtnCancel")
 };
 
 const TYPE_MAP = {
@@ -495,24 +500,48 @@ async function removeDownload(item) {
 function showRemoveDialog(item) {
   return new Promise((resolve) => {
     const isComplete = item.state === "complete";
-    const message = isComplete
-      ? "选择移除方式:\n\n[1] 仅移除记录\n[2] 删除文件并移除记录\n\n输入 1 或 2，取消请按 Esc"
-      : "确认移除该下载记录？";
 
+    // 显示模态框
+    elements.removeConfirmModal.classList.remove("hidden");
+
+    // 如果下载未完成，"删除文件"按钮应该隐藏或禁用（视具体需求，这里简单处理为都显示，但逻辑上未完成的文件无本地文件可删）
+    // 为了简化，若未完成，点击"删除文件"也视为仅移除记录，或者隐藏该按钮。
+    // 这里的逻辑是：如果是未完成的任务，"删除文件"选项其实没有意义，
+    // 但为了保持 UI 统一，我们可以让两个按钮都有效，或者根据状态调整 UI。
+    // 鉴于用户主要关注已完成文件的区分处理，这里简单处理：
     if (!isComplete) {
-      const confirmed = window.confirm(message);
-      resolve(confirmed ? "remove_record" : null);
-      return;
+      elements.modalBtnDeleteFile.style.display = 'none';
+    } else {
+      elements.modalBtnDeleteFile.style.display = 'block';
     }
 
-    const input = window.prompt(message, "1");
-    if (input === null) {
-      resolve(null);
-    } else if (input === "2") {
-      resolve("delete_file");
-    } else {
+    const cleanup = () => {
+      elements.removeConfirmModal.classList.add("hidden");
+      elements.modalBtnRemoveRecord.removeEventListener("click", handleRemoveRecord);
+      elements.modalBtnDeleteFile.removeEventListener("click", handleDeleteFile);
+      elements.modalBtnCancel.removeEventListener("click", handleCancel);
+      // 恢复按钮显示状态
+      elements.modalBtnDeleteFile.style.display = '';
+    };
+
+    const handleRemoveRecord = () => {
+      cleanup();
       resolve("remove_record");
-    }
+    };
+
+    const handleDeleteFile = () => {
+      cleanup();
+      resolve("delete_file");
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+
+    elements.modalBtnRemoveRecord.addEventListener("click", handleRemoveRecord);
+    elements.modalBtnDeleteFile.addEventListener("click", handleDeleteFile);
+    elements.modalBtnCancel.addEventListener("click", handleCancel);
   });
 }
 

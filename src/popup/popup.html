@@ -1,77 +1,93 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>下载管理</title>
-    <link rel="stylesheet" href="popup.css" />
-  </head>
-  <body>
-    <div class="app">
-      <header class="header">
-        <div class="search-box">
-          <input id="searchInput" type="text" placeholder="搜索文件名或域名" autocomplete="off" />
-          <button id="clearSearch" class="icon-button hidden" aria-label="清空搜索">✕</button>
-        </div>
-        <div class="header-actions">
-          <div id="downloadIndicator" class="download-indicator hidden">
-            <span class="dot"></span>
-            <span id="downloadIndicatorText">正在下载</span>
-          </div>
-          <button id="toggleFilters" class="icon-button" aria-label="筛选">筛选</button>
-          <div class="more-menu">
-            <button id="menuButton" class="icon-button" aria-label="更多">⋯</button>
-            <div id="menuPanel" class="menu-panel hidden">
-              <button data-action="open-downloads">打开下载页</button>
-              <button data-action="open-options">设置</button>
-              <div class="menu-divider"></div>
-              <button data-action="clear-complete">清理已完成记录</button>
-              <button data-action="clear-failed">清理失败记录</button>
-            </div>
-          </div>
-        </div>
-      </header>
 
-      <section id="filters" class="filters hidden">
-        <div class="filter-group">
-          <div class="filter-label">状态</div>
-          <div class="chip-group" id="statusFilters">
-            <button class="chip" data-value="all">全部</button>
-            <button class="chip" data-value="downloading">下载中</button>
-            <button class="chip" data-value="complete">已完成</button>
-            <button class="chip" data-value="interrupted">失败</button>
-          </div>
-        </div>
-        <div class="filter-group">
-          <div class="filter-label">类型</div>
-          <div class="chip-group" id="typeFilters">
-            <button class="chip" data-value="all">全部</button>
-            <button class="chip" data-value="document">文档</button>
-            <button class="chip" data-value="spreadsheet">表格</button>
-            <button class="chip" data-value="image">图片</button>
-            <button class="chip" data-value="archive">压缩包</button>
-            <button class="chip" data-value="installer">安装包</button>
-            <button class="chip" data-value="other">其他</button>
-          </div>
-        </div>
-      </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>下载管理</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
 
-      <main class="content">
-        <div id="skeleton" class="skeleton-list hidden"></div>
-        <div id="emptyState" class="empty-state hidden">
-          <div class="empty-title">暂无下载记录</div>
-          <div class="empty-desc">去下载点什么吧</div>
-          <button id="resetFilters" class="ghost-button hidden">清空搜索</button>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="search-box">
+        <input id="searchInput" type="text" placeholder="搜索文件名或域名" autocomplete="off" />
+        <button id="clearSearch" class="icon-button hidden" aria-label="清空搜索">✕</button>
+      </div>
+      <div class="header-actions">
+        <div id="downloadIndicator" class="download-indicator hidden">
+          <span class="dot"></span>
+          <span id="downloadIndicatorText">正在下载</span>
         </div>
-        <ul id="downloadList" class="download-list"></ul>
-      </main>
+        <button id="toggleFilters" class="icon-button" aria-label="筛选">筛选</button>
+        <div class="more-menu">
+          <button id="menuButton" class="icon-button" aria-label="更多">⋯</button>
+          <div id="menuPanel" class="menu-panel hidden">
+            <button data-action="open-downloads">打开下载页</button>
+            <button data-action="open-options">设置</button>
+            <div class="menu-divider"></div>
+            <button data-action="clear-complete">清理已完成记录</button>
+            <button data-action="clear-failed">清理失败记录</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="filters" class="filters hidden">
+      <div class="filter-group">
+        <div class="filter-label">状态</div>
+        <div class="chip-group" id="statusFilters">
+          <button class="chip" data-value="all">全部</button>
+          <button class="chip" data-value="downloading">下载中</button>
+          <button class="chip" data-value="complete">已完成</button>
+          <button class="chip" data-value="interrupted">失败</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">类型</div>
+        <div class="chip-group" id="typeFilters">
+          <button class="chip" data-value="all">全部</button>
+          <button class="chip" data-value="document">文档</button>
+          <button class="chip" data-value="spreadsheet">表格</button>
+          <button class="chip" data-value="image">图片</button>
+          <button class="chip" data-value="archive">压缩包</button>
+          <button class="chip" data-value="installer">安装包</button>
+          <button class="chip" data-value="other">其他</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="content">
+      <div id="skeleton" class="skeleton-list hidden"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-title">暂无下载记录</div>
+        <div class="empty-desc">去下载点什么吧</div>
+        <button id="resetFilters" class="ghost-button hidden">清空搜索</button>
+      </div>
+      <ul id="downloadList" class="download-list"></ul>
+    </main>
+  </div>
+
+  <div id="toast" class="toast hidden">
+    <span id="toastMessage"></span>
+    <button id="toastAction" class="toast-action hidden">撤销</button>
+  </div>
+
+  <!-- 移除确认模态框 -->
+  <div id="removeConfirmModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h3 class="modal-title">移除下载</h3>
+      <p class="modal-desc">您希望如何处理此下载任务？</p>
+      <div class="modal-actions">
+        <button id="modalBtnRemoveRecord" class="modal-btn secondary">仅移除记录</button>
+        <button id="modalBtnDeleteFile" class="modal-btn danger">删除文件并移除记录</button>
+      </div>
+      <button id="modalBtnCancel" class="modal-btn ghost">取消</button>
     </div>
+  </div>
 
-    <div id="toast" class="toast hidden">
-      <span id="toastMessage"></span>
-      <button id="toastAction" class="toast-action hidden">撤销</button>
-    </div>
+  <script src="popup.js"></script>
+</body>
 
-    <script src="popup.js"></script>
-  </body>
 </html>

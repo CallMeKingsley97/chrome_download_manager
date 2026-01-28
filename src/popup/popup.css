@@ -375,6 +375,21 @@ body {
   transition: width 0.3s ease;
 }
 
+.download-speed-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.speed-highlight {
+  color: var(--primary);
+  font-weight: 600;
+}
+
 .action-group {
   display: flex;
   flex-direction: column;

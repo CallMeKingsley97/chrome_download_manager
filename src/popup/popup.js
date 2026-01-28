@@ -15,7 +15,9 @@ const state = {
   settings: { ...DEFAULT_SETTINGS },
   loading: true,
   refreshTimer: null,
-  skeletonTimer: null
+  skeletonTimer: null,
+  // 用于计算下载速度的快照缓存 {downloadId: {bytes, timestamp}}
+  downloadSpeedCache: new Map()
 };
 
 const elements = {
@@ -336,6 +338,25 @@ function renderList(items) {
         : progressInfo;
       progress.append(progressBar, progressText);
       main.appendChild(progress);
+
+      // 添加速度和时间预估信息
+      const speedInfo = document.createElement("div");
+      speedInfo.className = "download-speed-info";
+
+      const speed = calculateDownloadSpeed(item);
+      const speedText = document.createElement("span");
+      speedText.innerHTML = `<span class="speed-highlight">${formatSpeed(speed)}</span>`;
+
+      const downloadedInfo = document.createElement("span");
+      const downloaded = formatBytes(item.bytesReceived || 0);
+      const total = item.totalBytes ? formatBytes(item.totalBytes) : "未知";
+      downloadedInfo.textContent = `${downloaded} / ${total}`;
+
+      const timeInfo = document.createElement("span");
+      timeInfo.textContent = estimateRemainingTime(item, speed);
+
+      speedInfo.append(speedText, downloadedInfo, timeInfo);
+      main.appendChild(speedInfo);
     }
 
     if (item.state === "interrupted") {
@@ -667,6 +688,105 @@ function formatBytes(bytes) {
     index += 1;
   }
   return `${value.toFixed(1)}${units[index]}`;
+}
+
+/**
+ * 格式化速度显示 (字节/秒)
+ */
+function formatSpeed(bytesPerSecond) {
+  if (!bytesPerSecond || bytesPerSecond <= 0) {
+    return "--";
+  }
+  const units = ["B/s", "KB/s", "MB/s", "GB/s"];
+  let value = bytesPerSecond;
+  let index = 0;
+  while (value >= 1024 && index < units.length - 1) {
+    value /= 1024;
+    index += 1;
+  }
+  return `${value.toFixed(1)}${units[index]}`;
+}
+
+/**
+ * 计算下载速度 (采样法)
+ * @param {object} item - Download item from Chrome API
+ * @returns {number} 速度(字节/秒),返回0表示无法计算
+ */
+function calculateDownloadSpeed(item) {
+  if (!item || item.state !== 'downloading' || !item.bytesReceived || item.bytesReceived === 0) {
+    return 0;
+  }
+
+  const now = Date.now();
+  const cache = state.downloadSpeedCache.get(item.id);
+
+  // 第一次采样,记录快照
+  if (!cache) {
+    state.downloadSpeedCache.set(item.id, {
+      bytes: item.bytesReceived,
+      timestamp: now
+    });
+    return 0; // 首次无法计算速度
+  }
+
+  // 计算时间差和字节差
+  const timeDiff = (now - cache.timestamp) / 1000; // 秒
+  const bytesDiff = item.bytesReceived - cache.bytes;
+
+  // 时间差太小,避免误差
+  if (timeDiff < 0.5) {
+    return 0;
+  }
+
+  // 更新快照
+  state.downloadSpeedCache.set(item.id, {
+    bytes: item.bytesReceived,
+    timestamp: now
+  });
+
+  // 计算速度
+  return bytesDiff / timeDiff;
+}
+
+/**
+ * 预估剩余时间
+ * @param {object} item - Download item from Chrome API
+ * @param {number} speed - 当前速度(字节/秒)
+ * @returns {string} 格式化的剩余时间
+ */
+function estimateRemainingTime(item, speed) {
+  // 优先使用Chrome API的estimatedEndTime
+  if (item.estimatedEndTime) {
+    const remaining = new Date(item.estimatedEndTime).getTime() - Date.now();
+    if (remaining > 0) {
+      return formatDuration(remaining);
+    }
+  }
+
+  // 备选方案:基于当前速度计算
+  if (speed > 0 && item.totalBytes && item.totalBytes > item.bytesReceived) {
+    const remainingBytes = item.totalBytes - item.bytesReceived;
+    const remainingMs = (remainingBytes / speed) * 1000;
+    return formatDuration(remainingMs);
+  }
+
+  return "计算中...";
+}
+
+/**
+ * 格式化时长 (毫秒转可读字符串)
+ */
+function formatDuration(ms) {
+  if (ms <= 0) return "即将完成";
+
+  const seconds = Math.ceil(ms / 1000);
+  if (seconds < 60) return `约 ${seconds} 秒`;
+
+  const minutes = Math.ceil(seconds / 60);
+  if (minutes < 60) return `约 ${minutes} 分钟`;
+
+  const hours = Math.ceil(minutes / 60);
+  return `约 ${hours} 小时`;
 }
 
 function formatTime(timeString) {

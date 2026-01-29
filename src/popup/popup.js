@@ -16,6 +16,7 @@ const state = {
   loading: true,
   refreshTimer: null,
   skeletonTimer: null,
+  progressRefreshTimer: null,
   // 用于计算下载速度的快照缓存 {downloadId: {bytes, timestamp}}
   downloadSpeedCache: new Map()
 };
@@ -157,6 +158,75 @@ function scheduleRefresh() {
   }, 500);
 }
 
+// 定时刷新下载进度 (当有活跃下载时)
+function startProgressRefresh() {
+  if (state.progressRefreshTimer) {
+    return; // 已经在运行
+  }
+  state.progressRefreshTimer = setInterval(() => {
+    updateActiveDownloadsUI(); // 只更新进度，不重建列表
+  }, 1000); // 每秒刷新一次
+}
+
+function stopProgressRefresh() {
+  if (state.progressRefreshTimer) {
+    clearInterval(state.progressRefreshTimer);
+    state.progressRefreshTimer = null;
+  }
+}
+
+// 只更新活跃下载的进度UI，不重建整个列表
+async function updateActiveDownloadsUI() {
+  if (!chromeApi || !chromeApi.downloads) {
+    return;
+  }
+  try {
+    // 只获取正在下载的项目
+    const activeItems = await chromeDownloadsSearch({ state: "in_progress" });
+
+    activeItems.forEach((item) => {
+      // 更新 state 中的数据
+      const index = state.downloads.findIndex((d) => d.id === item.id);
+      if (index !== -1) {
+        state.downloads[index] = item;
+      }
+
+      // 找到 DOM 中对应的卡片
+      const card = elements.downloadList.querySelector(`[data-id="${item.id}"]`);
+      if (!card) {
+        return;
+      }
+
+      // 更新进度条
+      const progressValue = card.querySelector(".progress-bar span");
+      if (progressValue) {
+        const percent = getProgressPercent(item);
+        if (item.totalBytes && item.totalBytes > 0) {
+          progressValue.style.width = `${percent}%`;
+        }
+      }
+
+      // 更新详情文字
+      const details = card.querySelector(".download-details-text");
+      if (details) {
+        const speed = calculateDownloadSpeed(item);
+        const speedStr = formatSpeed(speed);
+        const downloadedStr = formatBytes(item.bytesReceived || 0);
+        const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
+        const timeLeftStr = estimateRemainingTime(item, speed);
+        details.textContent = `下载中 , ${speedStr} - ${downloadedStr} , 共 ${totalStr} , 剩余 ${timeLeftStr}`;
+      }
+    });
+
+    // 检查是否有下载完成，需要完整刷新
+    if (activeItems.length === 0 && state.downloads.some((d) => d.state === "in_progress")) {
+      loadDownloads(); // 状态变化，完整刷新
+    }
+  } catch (error) {
+    console.error("更新进度失败", error);
+  }
+}
+
 function renderSkeleton() {
   elements.skeleton.innerHTML = "";
   for (let index = 0; index < 6; index += 1) {
@@ -268,6 +338,14 @@ function applyFilters() {
   });
   updateDownloadIndicator();
   renderList(filtered);
+
+  // 根据是否有活跃下载来启动/停止定时刷新
+  const hasActiveDownloads = state.downloads.some((item) => item.state === "in_progress" || item.state === "downloading");
+  if (hasActiveDownloads) {
+    startProgressRefresh();
+  } else {
+    stopProgressRefresh();
+  }
 }
 
 function renderList(items) {
@@ -289,6 +367,7 @@ function renderList(items) {
   items.forEach((item) => {
     const card = document.createElement("li");
     card.className = "download-item";
+    card.dataset.id = item.id; // 添加 ID 用于局部更新
 
     const fileType = detectFileType(item);
     const icon = document.createElement("div");
@@ -307,7 +386,8 @@ function renderList(items) {
     main.append(title);
 
     // 非下载中状态显示标准元数据
-    if (item.state !== "downloading") {
+    const isDownloading = item.state === "in_progress" || item.state === "downloading";
+    if (!isDownloading) {
       const status = document.createElement("span");
       status.className = `status-pill ${statusClass(item.state)}`;
       status.textContent = statusLabel(item.state);
@@ -325,7 +405,7 @@ function renderList(items) {
       main.append(status, meta);
     }
 
-    if (item.state === "downloading") {
+    if (isDownloading) {
       // 1. 进度条 (细条，无文字)
       const progress = document.createElement("div");
       progress.className = "progress compact"; // Add compact class
@@ -380,7 +460,7 @@ function renderList(items) {
     if (item.state === "interrupted") {
       actions.append(buildActionButton("重试", "primary", () => retryDownload(item)));
     }
-    if (item.state === "downloading") {
+    if (isDownloading) {
       actions.append(buildActionButton("取消", "danger", () => cancelDownload(item)));
     }
     actions.append(buildActionButton("移除", "", () => removeDownload(item)));
@@ -391,7 +471,7 @@ function renderList(items) {
 }
 
 function updateDownloadIndicator() {
-  const downloadingCount = state.downloads.filter((item) => item.state === "downloading").length;
+  const downloadingCount = state.downloads.filter((item) => item.state === "in_progress" || item.state === "downloading").length;
   if (downloadingCount > 0) {
     elements.downloadIndicator.classList.remove("hidden");
     elements.downloadIndicatorText.innerHTML = `正在下载 <span class="count">${downloadingCount}</span> 项`;
@@ -491,8 +571,18 @@ async function showInFolder(item) {
 
 async function retryDownload(item) {
   try {
-    await chromeDownloadsResume(item.id);
-    showToast("已尝试重试", false);
+    // resume() 只能恢复暂停的下载，不能重新开始已取消/中断的下载
+    if (item.state === "paused" || item.canResume) {
+      await chromeDownloadsResume(item.id);
+      showToast("已恢复下载", false);
+    } else if (item.url) {
+      // 对于中断/取消的下载，使用原始 URL 重新下载
+      await chromeDownloadsDownload({ url: item.url });
+      showToast("已重新开始下载", false);
+      loadDownloads(); // 刷新列表显示新下载
+    } else {
+      showToast("无法重试：缺少下载链接", false);
+    }
   } catch (error) {
     console.error("重试失败", error);
     showToast("重试失败", false);
@@ -739,44 +829,34 @@ function formatSpeed(bytesPerSecond) {
 }
 
 /**
- * 计算下载速度 (采样法)
+ * 计算下载速度 (基于已下载字节和耗时的平均速度)
  * @param {object} item - Download item from Chrome API
  * @returns {number} 速度(字节/秒),返回0表示无法计算
  */
 function calculateDownloadSpeed(item) {
-  if (!item || item.state !== 'downloading' || !item.bytesReceived || item.bytesReceived === 0) {
+  const isDownloading = item && (item.state === 'in_progress' || item.state === 'downloading');
+  if (!isDownloading || !item.bytesReceived || item.bytesReceived === 0) {
     return 0;
   }
 
-  const now = Date.now();
-  const cache = state.downloadSpeedCache.get(item.id);
-
-  // 第一次采样,记录快照
-  if (!cache) {
-    state.downloadSpeedCache.set(item.id, {
-      bytes: item.bytesReceived,
-      timestamp: now
-    });
-    return 0; // 首次无法计算速度
+  // 方法1: 基于 estimatedEndTime 反推速度
+  if (item.estimatedEndTime && item.totalBytes && item.totalBytes > item.bytesReceived) {
+    const remainingMs = new Date(item.estimatedEndTime).getTime() - Date.now();
+    if (remainingMs > 0) {
+      const remainingBytes = item.totalBytes - item.bytesReceived;
+      return remainingBytes / (remainingMs / 1000);
+    }
   }
 
-  // 计算时间差和字节差
-  const timeDiff = (now - cache.timestamp) / 1000; // 秒
-  const bytesDiff = item.bytesReceived - cache.bytes;
-
-  // 时间差太小,避免误差
-  if (timeDiff < 0.5) {
-    return 0;
+  // 方法2: 基于开始时间和已下载字节计算平均速度
+  if (item.startTime) {
+    const elapsedMs = Date.now() - new Date(item.startTime).getTime();
+    if (elapsedMs > 1000) { // 至少1秒才计算
+      return item.bytesReceived / (elapsedMs / 1000);
+    }
   }
 
-  // 更新快照
-  state.downloadSpeedCache.set(item.id, {
-    bytes: item.bytesReceived,
-    timestamp: now
-  });
-
-  // 计算速度
-  return bytesDiff / timeDiff;
+  return 0;
 }
 
 /**

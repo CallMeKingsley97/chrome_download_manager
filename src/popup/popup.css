@@ -40,10 +40,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   background: var(--bg);
   color: var(--text);
-  width: 480px;
-  /* Slightly wider */
-  height: 640px;
-  /* Taller */
+  width: 380px;
+  height: 500px;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -58,8 +56,8 @@ body {
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 10px 12px;
   background: rgba(var(--bg), 0.8);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -71,8 +69,8 @@ body {
   display: flex;
   align-items: center;
   background: var(--card);
-  border-radius: 12px;
-  padding: 8px 12px;
+  border-radius: 8px;
+  padding: 6px 10px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   transition: all 0.3s ease;
@@ -88,7 +86,7 @@ body {
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
 }
 
@@ -136,12 +134,12 @@ body {
   border: none;
   background: var(--card);
   color: var(--text);
-  border-radius: 12px;
-  padding: 8px 12px;
+  border-radius: 8px;
+  padding: 6px 10px;
   cursor: pointer;
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.3s ease;
 }
@@ -162,10 +160,10 @@ body {
 }
 
 .filters {
-  padding: 8px 16px 12px;
+  padding: 6px 12px 8px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
@@ -173,11 +171,11 @@ body {
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
 }
 
 .filter-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
@@ -187,17 +185,17 @@ body {
 .chip-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .chip {
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text);
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 4px 10px;
+  border-radius: 14px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   transition: all 0.3s ease;
 }
@@ -217,7 +215,7 @@ body {
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 16px;
+  padding: 0 12px 12px;
 }
 
 .content::-webkit-scrollbar {
@@ -253,19 +251,17 @@ body {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 12px;
+  gap: 8px;
+  padding-top: 8px;
 }
 
 .download-item {
   background: var(--card);
-  border-radius: 12px;
-  /* iOS style rounded corners */
+  border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.04);
-  /* Subtler border */
-  padding: 16px;
+  padding: 10px;
   display: flex;
-  gap: 14px;
+  gap: 10px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
@@ -277,35 +273,35 @@ body {
 }
 
 .file-icon {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 10px;
+  font-size: 9px;
   color: white;
   letter-spacing: 0.3px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
 }
 
 .file-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .file-title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .file-title mark {
@@ -316,19 +312,19 @@ body {
 }
 
 .file-meta {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .status-pill {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
   align-self: flex-start;
   letter-spacing: 0.2px;
 }
@@ -443,9 +439,9 @@ body {
 }
 
 .download-details-text {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
-  margin-top: 4px;
+  margin-top: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -454,18 +450,18 @@ body {
 .action-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 60px;
+  gap: 4px;
+  min-width: 50px;
 }
 
 .action-button {
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text);
-  border-radius: 10px;
-  padding: 6px 10px;
+  border-radius: 8px;
+  padding: 4px 8px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   transition: all 0.3s ease;
   text-align: center;

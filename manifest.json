@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Download Manager Lite",
   "description": "快速管理最近下载任务",
-  "version": "0.1.9",
+  "version": "0.2.1",
   "action": {
     "default_popup": "src/popup/popup.html",
     "default_title": "下载管理"

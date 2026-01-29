@@ -16,6 +16,7 @@
         <button id="clearSearch" class="icon-button hidden" aria-label="清空搜索">✕</button>
       </div>
       <div class="header-actions">
+        <button id="newDownloadBtn" class="icon-button new-download-btn">+ 新建</button>
         <div id="downloadIndicator" class="download-indicator hidden">
           <span class="dot"></span>
           <span id="downloadIndicatorText">正在下载</span>
@@ -84,6 +85,20 @@
         <button id="modalBtnDeleteFile" class="modal-btn danger">删除文件并移除记录</button>
       </div>
       <button id="modalBtnCancel" class="modal-btn ghost">取消</button>
+    </div>
+  </div>
+
+  <!-- 新建下载模态框 -->
+  <div id="newDownloadModal" class="modal-overlay hidden">
+    <div class="modal-content new-download-modal">
+      <h3 class="modal-title">新建下载</h3>
+      <p class="modal-desc">请输入下载项地址。一行一项，只支持HTTP、HTTPS协议地址</p>
+      <textarea id="newDownloadUrls" class="url-input" rows="6"
+        placeholder="https://example.com/file1.zip&#10;https://example.com/file2.pdf"></textarea>
+      <div class="modal-actions horizontal">
+        <button id="newDownloadSubmit" class="modal-btn primary">下载</button>
+        <button id="newDownloadCancel" class="modal-btn ghost">取消</button>
+      </div>
     </div>
   </div>
 

@@ -43,7 +43,13 @@ const elements = {
   removeConfirmModal: document.getElementById("removeConfirmModal"),
   modalBtnRemoveRecord: document.getElementById("modalBtnRemoveRecord"),
   modalBtnDeleteFile: document.getElementById("modalBtnDeleteFile"),
-  modalBtnCancel: document.getElementById("modalBtnCancel")
+  modalBtnCancel: document.getElementById("modalBtnCancel"),
+  // New Download Modal Elements
+  newDownloadBtn: document.getElementById("newDownloadBtn"),
+  newDownloadModal: document.getElementById("newDownloadModal"),
+  newDownloadUrls: document.getElementById("newDownloadUrls"),
+  newDownloadSubmit: document.getElementById("newDownloadSubmit"),
+  newDownloadCancel: document.getElementById("newDownloadCancel")
 };
 
 const TYPE_MAP = {
@@ -141,6 +147,17 @@ function bindEvents() {
     }
     if (event.key === "Escape") {
       closeMenu();
+      hideNewDownloadModal();
+    }
+  });
+
+  // 新建下载按钮事件
+  elements.newDownloadBtn.addEventListener("click", showNewDownloadModal);
+  elements.newDownloadSubmit.addEventListener("click", handleNewDownload);
+  elements.newDownloadCancel.addEventListener("click", hideNewDownloadModal);
+  elements.newDownloadModal.addEventListener("click", (event) => {
+    if (event.target === elements.newDownloadModal) {
+      hideNewDownloadModal();
     }
   });
 
@@ -1211,4 +1228,82 @@ function chromeDownloadsRemoveFile(id) {
       reject(error);
     }
   });
+}
+
+// ========== 新建下载功能 ==========
+
+function showNewDownloadModal() {
+  elements.newDownloadUrls.value = "";
+  elements.newDownloadModal.classList.remove("hidden");
+  elements.newDownloadUrls.focus();
+}
+
+function hideNewDownloadModal() {
+  elements.newDownloadModal.classList.add("hidden");
+  elements.newDownloadUrls.value = "";
+}
+
+async function handleNewDownload() {
+  const text = elements.newDownloadUrls.value.trim();
+  if (!text) {
+    showToast("请输入下载地址", false);
+    return;
+  }
+
+  const lines = text.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+  if (lines.length === 0) {
+    showToast("请输入下载地址", false);
+    return;
+  }
+
+  const validUrls = [];
+  const invalidUrls = [];
+
+  lines.forEach((url) => {
+    if (isValidHttpUrl(url)) {
+      validUrls.push(url);
+    } else {
+      invalidUrls.push(url);
+    }
+  });
+
+  if (validUrls.length === 0) {
+    showToast("没有有效的 HTTP/HTTPS 地址", false);
+    return;
+  }
+
+  hideNewDownloadModal();
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (const url of validUrls) {
+    try {
+      await chromeDownloadsDownload({ url });
+      successCount += 1;
+    } catch (error) {
+      console.error("下载失败", url, error);
+      failCount += 1;
+    }
+  }
+
+  // 显示结果
+  let message = `已添加 ${successCount} 个下载任务`;
+  if (failCount > 0) {
+    message += `，${failCount} 个失败`;
+  }
+  if (invalidUrls.length > 0) {
+    message += `，${invalidUrls.length} 个地址无效`;
+  }
+  showToast(message, false);
+  loadDownloads();
+}
+
+function isValidHttpUrl(str) {
+  try {
+    const url = new URL(str);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (error) {
+    return false;
+  }
 }

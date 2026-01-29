@@ -828,3 +828,56 @@ body {
   color: var(--text);
   background: rgba(0, 0, 0, 0.05);
 }
+
+/* 新建下载功能样式 */
+.new-download-btn {
+  background: var(--success);
+  color: white;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.new-download-btn:hover {
+  background: #2eaa4e;
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(52, 199, 89, 0.4);
+}
+
+.new-download-modal {
+  width: 340px;
+}
+
+.url-input {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.url-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.url-input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.modal-actions.horizontal {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.modal-actions.horizontal .modal-btn {
+  flex: 1;
+}

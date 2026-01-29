@@ -699,6 +699,28 @@ function formatBytes(bytes) {
   return `${value.toFixed(1)}${units[index]}`;
 }
 
+function formatTime(dateStr) {
+  if (!dateStr) {
+    return "--";
+  }
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    if (isToday) {
+      return `${hours}:${minutes}`;
+    }
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day} ${hours}:${minutes}`;
+  } catch (error) {
+    console.error("格式化时间失败", error);
+    return "--";
+  }
+}
+
 /**
  * 格式化速度显示 (字节/秒)
  */

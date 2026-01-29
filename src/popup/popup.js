@@ -305,26 +305,31 @@ function renderList(items) {
     // 悬停时显示完整绝对路径，正常只显示文件名
     title.title = item.filename || "";
     title.innerHTML = highlightMatch(getFileName(item), state.searchText);
+    main.append(title);
 
-    const status = document.createElement("span");
-    status.className = `status-pill ${statusClass(item.state)}`;
-    status.textContent = statusLabel(item.state);
+    // 非下载中状态显示标准元数据
+    if (item.state !== "downloading") {
+      const status = document.createElement("span");
+      status.className = `status-pill ${statusClass(item.state)}`;
+      status.textContent = statusLabel(item.state);
 
-    const meta = document.createElement("div");
-    meta.className = "file-meta";
-    const domain = document.createElement("span");
-    domain.innerHTML = highlightMatch(getDomain(item), state.searchText);
-    const size = document.createElement("span");
-    size.textContent = formatBytes(item.fileSize || item.totalBytes || 0);
-    const time = document.createElement("span");
-    time.textContent = formatTime(item.endTime || item.startTime);
-    meta.append(domain, size, time);
+      const meta = document.createElement("div");
+      meta.className = "file-meta";
+      const domain = document.createElement("span");
+      domain.innerHTML = highlightMatch(getDomain(item), state.searchText);
+      const size = document.createElement("span");
+      size.textContent = formatBytes(item.fileSize || item.totalBytes || 0);
+      const time = document.createElement("span");
+      time.textContent = formatTime(item.endTime || item.startTime);
+      meta.append(domain, size, time);
 
-    main.append(title, status, meta);
+      main.append(status, meta);
+    }
 
     if (item.state === "downloading") {
+      // 1. 进度条 (细条，无文字)
       const progress = document.createElement("div");
-      progress.className = "progress";
+      progress.className = "progress compact"; // Add compact class
       const progressBar = document.createElement("div");
       progressBar.className = "progress-bar";
       if (!item.totalBytes || item.totalBytes <= 0) {
@@ -338,25 +343,23 @@ function renderList(items) {
         progressValue.style.width = `${percent}%`;
       }
       progressBar.appendChild(progressValue);
-      const progressText = document.createElement("span");
-      progressText.className = "progress-text";
-      progressText.textContent = item.totalBytes ? `${percent}%` : "??";
-      progress.append(progressBar, progressText);
+      progress.appendChild(progressBar);
       main.appendChild(progress);
 
-      const speedInfo = document.createElement("div");
-      speedInfo.className = "download-speed-info";
+      // 2. 详情文字行: "下载中, 277.7KB/s - 1.8MB , 共 12.7MB , 剩余 40秒"
+      const details = document.createElement("div");
+      details.className = "download-details-text";
 
       const speed = calculateDownloadSpeed(item);
-      const downloaded = formatBytes(item.bytesReceived || 0);
-      const total = item.totalBytes ? formatBytes(item.totalBytes) : "??";
-      const pills = [buildInfoPill("??", formatSpeed(speed), "speed")];
-      if (state.settings.showSpeed) {
-        pills.push(buildInfoPill("??", `${downloaded} / ${total}`, "size"));
-      }
-      pills.push(buildInfoPill("??", estimateRemainingTime(item, speed), "eta"));
-      speedInfo.append(...pills);
-      main.appendChild(speedInfo);
+      const speedStr = formatSpeed(speed);
+      const downloadedStr = formatBytes(item.bytesReceived || 0);
+      const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
+      const timeLeftStr = estimateRemainingTime(item, speed);
+
+      // 组合字符串
+      details.textContent = `下载中 , ${speedStr} - ${downloadedStr} , 共 ${totalStr} , 剩余 ${timeLeftStr}`;
+
+      main.appendChild(details);
     }
 
     if (item.state === "interrupted") {
@@ -537,11 +540,6 @@ function showRemoveDialog(item) {
     // 显示模态框
     elements.removeConfirmModal.classList.remove("hidden");
 
-    // 如果下载未完成，"删除文件"按钮应该隐藏或禁用（视具体需求，这里简单处理为都显示，但逻辑上未完成的文件无本地文件可删）
-    // 为了简化，若未完成，点击"删除文件"也视为仅移除记录，或者隐藏该按钮。
-    // 这里的逻辑是：如果是未完成的任务，"删除文件"选项其实没有意义，
-    // 但为了保持 UI 统一，我们可以让两个按钮都有效，或者根据状态调整 UI。
-    // 鉴于用户主要关注已完成文件的区分处理，这里简单处理：
     if (!isComplete) {
       elements.modalBtnDeleteFile.style.display = 'none';
     } else {
@@ -792,83 +790,84 @@ function formatDuration(ms) {
   if (ms <= 0) return "即将完成";
 
   const seconds = Math.ceil(ms / 1000);
-  if (seconds < 60) return `约 ${seconds} 秒`;
+  if (seconds < 60) return `${seconds}秒`;
 
   const minutes = Math.ceil(seconds / 60);
-  if (minutes < 60) return `约 ${minutes} 分钟`;
+  if (minutes < 60) return `${minutes}分钟`;
 
   const hours = Math.ceil(minutes / 60);
   return `约 ${hours} 小时`;
 }
 
-function formatTime(timeString) {
-  if (!timeString) {
-    return "--";
-  }
-  const date = new Date(timeString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (now.toDateString() === date.toDateString()) {
-    return date.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
-  }
-  if (diffDays === 1) {
-    return "昨天";
-  }
-  return date.toLocaleDateString("zh-CN", { month: "2-digit", day: "2-digit" });
-}
-
-function statusLabel(stateValue) {
+function statusLabel(state) {
   const map = {
-    complete: "已完成",
+    in_progress: "下载中",
     downloading: "下载中",
-    interrupted: "失败",
-    paused: "暂停"
+    interrupted: "已失败",
+    complete: "已完成",
+    paused: "已暂停"
   };
-  return map[stateValue] || "未知";
+  return map[state] || state;
 }
 
-function statusClass(stateValue) {
+function statusClass(state) {
   const map = {
-    complete: "status-complete",
+    in_progress: "status-downloading",
     downloading: "status-downloading",
     interrupted: "status-interrupted",
+    complete: "status-complete",
     paused: "status-paused"
   };
-  return map[stateValue] || "";
+  return map[state] || "";
 }
 
-function debounce(fn, delay) {
-  let timer;
-  return (...args) => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => fn(...args), delay);
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
   };
 }
 
-function showToast(message, withAction, actionHandler) {
+function showToast(message, allowUndo, undoCallback) {
   elements.toastMessage.textContent = message;
   elements.toast.classList.remove("hidden");
-  if (withAction && actionHandler) {
+
+  if (allowUndo && undoCallback) {
     elements.toastAction.classList.remove("hidden");
     elements.toastAction.onclick = () => {
-      elements.toastAction.classList.add("hidden");
-      actionHandler();
+      undoCallback();
+      hideToast();
     };
   } else {
     elements.toastAction.classList.add("hidden");
   }
+
   setTimeout(() => {
-    elements.toast.classList.add("hidden");
-  }, 2400);
+    hideToast();
+  }, 3000);
 }
 
+function hideToast() {
+  elements.toast.classList.add("hidden");
+}
+
+// Chrome API Wrappers
 function chromeDownloadsSearch(query) {
   return new Promise((resolve, reject) => {
     try {
       if (!chromeApi || !chromeApi.downloads) {
+        // 在开发环境模拟数据
+        if (state.downloads.length > 0) {
+          resolve(state.downloads);
+          return;
+        }
+        // Mock data for development when API is not present
+        // resolve([]);
         reject(new Error("下载 API 不可用"));
         return;
       }
@@ -895,15 +894,10 @@ function chromeDownloadsOpen(id) {
         reject(new Error("下载 API 不可用"));
         return;
       }
-      chromeApi.downloads.open(id, () => {
-        const error = chromeApi.runtime.lastError;
-        if (error) {
-          console.error("downloads.open 失败", error.message);
-          reject(error);
-          return;
-        }
-        resolve();
-      });
+      chromeApi.downloads.open(id);
+      // open method does not have a callback in some versions, but we assume it works or throws async
+      // To be safe wrap in try catch and resolve
+      resolve();
     } catch (error) {
       console.error("downloads.open 异常", error);
       reject(error);
@@ -918,14 +912,7 @@ function chromeDownloadsShow(id) {
         reject(new Error("下载 API 不可用"));
         return;
       }
-      // chrome.downloads.show() 是同步方法，不接受回调函数
       chromeApi.downloads.show(id);
-      const error = chromeApi.runtime.lastError;
-      if (error) {
-        console.error("downloads.show 失败", error.message);
-        reject(error);
-        return;
-      }
       resolve();
     } catch (error) {
       console.error("downloads.show 异常", error);

@@ -327,35 +327,35 @@ function renderList(items) {
       progress.className = "progress";
       const progressBar = document.createElement("div");
       progressBar.className = "progress-bar";
+      if (!item.totalBytes || item.totalBytes <= 0) {
+        progressBar.classList.add("indeterminate");
+      }
       const progressValue = document.createElement("span");
       const percent = getProgressPercent(item);
-      progressValue.style.width = `${percent}%`;
+      if (!item.totalBytes || item.totalBytes <= 0) {
+        progressValue.style.width = "40%";
+      } else {
+        progressValue.style.width = `${percent}%`;
+      }
       progressBar.appendChild(progressValue);
       const progressText = document.createElement("span");
-      const progressInfo = `${percent}%`;
-      progressText.textContent = state.settings.showSpeed
-        ? `${progressInfo} · 已下载 ${formatBytes(item.bytesReceived || 0)}`
-        : progressInfo;
+      progressText.className = "progress-text";
+      progressText.textContent = item.totalBytes ? `${percent}%` : "??";
       progress.append(progressBar, progressText);
       main.appendChild(progress);
 
-      // 添加速度和时间预估信息
       const speedInfo = document.createElement("div");
       speedInfo.className = "download-speed-info";
 
       const speed = calculateDownloadSpeed(item);
-      const speedText = document.createElement("span");
-      speedText.innerHTML = `<span class="speed-highlight">${formatSpeed(speed)}</span>`;
-
-      const downloadedInfo = document.createElement("span");
       const downloaded = formatBytes(item.bytesReceived || 0);
-      const total = item.totalBytes ? formatBytes(item.totalBytes) : "未知";
-      downloadedInfo.textContent = `${downloaded} / ${total}`;
-
-      const timeInfo = document.createElement("span");
-      timeInfo.textContent = estimateRemainingTime(item, speed);
-
-      speedInfo.append(speedText, downloadedInfo, timeInfo);
+      const total = item.totalBytes ? formatBytes(item.totalBytes) : "??";
+      const pills = [buildInfoPill("??", formatSpeed(speed), "speed")];
+      if (state.settings.showSpeed) {
+        pills.push(buildInfoPill("??", `${downloaded} / ${total}`, "size"));
+      }
+      pills.push(buildInfoPill("??", estimateRemainingTime(item, speed), "eta"));
+      speedInfo.append(...pills);
       main.appendChild(speedInfo);
     }
 
@@ -410,6 +410,18 @@ function buildActionButton(label, variant, onClick) {
     });
   });
   return button;
+}
+
+function buildInfoPill(label, value, variant) {
+  const pill = document.createElement("span");
+  pill.className = variant ? `info-pill info-pill--${variant}` : "info-pill";
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "info-pill-label";
+  labelSpan.textContent = label;
+  const valueSpan = document.createElement("strong");
+  valueSpan.textContent = value;
+  pill.append(labelSpan, valueSpan);
+  return pill;
 }
 
 function handleMenuAction(action) {

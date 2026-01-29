@@ -375,12 +375,23 @@ body {
   transition: width 0.3s ease;
 }
 
+.progress-bar.indeterminate span {
+  width: 40%;
+  animation: progressIndeterminate 1.2s ease-in-out infinite;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 40px;
+  text-align: right;
+  font-weight: 600;
+}
+
 .download-speed-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--muted);
+  gap: 8px;
   margin-top: 6px;
   flex-wrap: wrap;
 }
@@ -388,6 +399,37 @@ body {
 .speed-highlight {
   color: var(--primary);
   font-weight: 600;
+}
+
+.info-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.02);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.info-pill strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.info-pill-label {
+  letter-spacing: 0.2px;
+}
+
+.info-pill--speed strong {
+  color: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .info-pill {
+    background: rgba(255, 255, 255, 0.08);
+  }
 }
 
 .action-group {
@@ -579,6 +621,16 @@ body {
 
   100% {
     background-position: 200% 0;
+  }
+}
+
+@keyframes progressIndeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(220%);
   }
 }
 

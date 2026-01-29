@@ -94,6 +94,7 @@ function bindEvents() {
   elements.clearSearch.addEventListener("click", clearSearch);
   elements.toggleFilters.addEventListener("click", () => {
     elements.filters.classList.toggle("hidden");
+    elements.toggleFilters.classList.toggle("active");
   });
   elements.statusFilters.addEventListener("click", (event) => {
     const target = event.target.closest("button");

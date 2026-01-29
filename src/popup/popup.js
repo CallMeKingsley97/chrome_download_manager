@@ -202,10 +202,9 @@ async function loadDownloads() {
     }, 300);
 
     const items = await chromeDownloadsSearch({
-      orderBy: ["-startTime"],
-      maxResults: state.settings.listSize
+      orderBy: ["-startTime"]
     });
-    state.downloads = items || [];
+    state.downloads = (items || []).slice(0, state.settings.listSize);
     state.loading = false;
     if (state.skeletonTimer) {
       clearTimeout(state.skeletonTimer);

@@ -203,7 +203,7 @@ async function loadDownloads() {
 
     const items = await chromeDownloadsSearch({
       orderBy: ["-startTime"],
-      limit: state.settings.listSize
+      maxResults: state.settings.listSize
     });
     state.downloads = items || [];
     state.loading = false;

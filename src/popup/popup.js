@@ -689,7 +689,10 @@ async function undoRemove(item) {
     return;
   }
   try {
-    await chromeDownloadsDownload({ url: item.url, filename: item.filename });
+    // chrome.downloads.download() 的 filename 参数只接受相对于下载目录的相对路径
+    // item.filename 是绝对路径（如 C:\Users\xxx\Downloads\file.zip），直接传入会报错
+    // 因此只传 url，让 Chrome 自动处理文件名
+    await chromeDownloadsDownload({ url: item.url });
     showToast("已重新下载", false);
   } catch (error) {
     console.error("撤销失败", error);

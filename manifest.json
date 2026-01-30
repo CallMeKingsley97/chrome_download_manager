@@ -2,10 +2,20 @@
   "manifest_version": 3,
   "name": "Download Manager Lite",
   "description": "快速管理最近下载任务",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "action": {
     "default_popup": "src/popup/popup.html",
-    "default_title": "下载管理"
+    "default_title": "下载管理",
+    "default_icon": {
+      "16": "src/icons/icon128.svg",
+      "48": "src/icons/icon128.svg",
+      "128": "src/icons/icon128.svg"
+    }
+  },
+  "icons": {
+    "16": "src/icons/icon128.svg",
+    "48": "src/icons/icon128.svg",
+    "128": "src/icons/icon128.svg"
   },
   "background": {
     "service_worker": "src/background/background.js"
@@ -13,7 +23,25 @@
   "permissions": [
     "downloads",
     "downloads.open",
-    "storage"
+    "storage",
+    "notifications",
+    "contextMenus"
   ],
+  "commands": {
+    "clear-completed": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "清理已完成记录"
+    },
+    "clear-failed": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
+      },
+      "description": "清理失败记录"
+    }
+  },
   "options_page": "src/options/options.html"
 }

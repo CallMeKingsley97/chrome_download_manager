@@ -1,44 +1,65 @@
 <!doctype html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>下载管理设置</title>
-    <link rel="stylesheet" href="options.css" />
-  </head>
-  <body>
-    <div class="container">
-      <h1>下载管理设置</h1>
-      <form id="settingsForm">
-        <label class="field">
-          <span>列表显示条数</span>
-          <select id="listSize">
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>默认筛选</span>
-          <select id="defaultStatusFilter">
-            <option value="all">全部</option>
-            <option value="downloading">仅下载中</option>
-            <option value="complete">仅已完成</option>
-            <option value="interrupted">仅失败</option>
-          </select>
-        </label>
-        <label class="field checkbox">
-          <input type="checkbox" id="showSpeed" />
-          <span>显示已下载大小（下载中）</span>
-        </label>
-        <label class="field checkbox">
-          <input type="checkbox" id="undoRemove" />
-          <span>移除记录后显示撤销入口</span>
-        </label>
-        <button class="primary" type="submit">保存设置</button>
-        <div id="status" class="status"></div>
-      </form>
-    </div>
-    <script src="options.js"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>下载管理设置</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+
+<body>
+  <div class="container">
+    <h1>下载管理设置</h1>
+    <form id="settingsForm">
+      <label class="field">
+        <span>列表显示条数</span>
+        <select id="listSize">
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>默认筛选</span>
+        <select id="defaultStatusFilter">
+          <option value="all">全部</option>
+          <option value="downloading">仅下载中</option>
+          <option value="complete">仅已完成</option>
+          <option value="interrupted">仅失败</option>
+        </select>
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="showSpeed" />
+        <span>显示已下载大小（下载中）</span>
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="undoRemove" />
+        <span>移除记录后显示撤销入口</span>
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="enableNotifications" />
+        <span>下载完成时发送系统通知</span>
+      </label>
+
+      <div class="section-divider"></div>
+
+      <div class="field shortcut-info">
+        <span class="section-title">快捷键</span>
+        <ul class="shortcut-list">
+          <li><kbd>Ctrl+Shift+C</kbd> <span>清理已完成记录</span></li>
+          <li><kbd>Ctrl+Shift+X</kbd> <span>清理失败记录</span></li>
+          <li><kbd>/</kbd> <span>聚焦搜索框 (在 Popup 中)</span></li>
+          <li><kbd>Escape</kbd> <span>关闭菜单/弹窗</span></li>
+        </ul>
+        <a href="#" id="openShortcutsPage" class="link">自定义快捷键...</a>
+      </div>
+
+      <button class="primary" type="submit">保存设置</button>
+      <div id="status" class="status"></div>
+    </form>
+  </div>
+  <script src="options.js"></script>
+</body>
+
 </html>

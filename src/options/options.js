@@ -4,7 +4,8 @@ const DEFAULT_SETTINGS = {
   listSize: 50,
   defaultStatusFilter: "all",
   showSpeed: false,
-  undoRemove: true
+  undoRemove: true,
+  enableNotifications: true
 };
 
 const elements = {
@@ -13,6 +14,8 @@ const elements = {
   defaultStatusFilter: document.getElementById("defaultStatusFilter"),
   showSpeed: document.getElementById("showSpeed"),
   undoRemove: document.getElementById("undoRemove"),
+  enableNotifications: document.getElementById("enableNotifications"),
+  openShortcutsPage: document.getElementById("openShortcutsPage"),
   status: document.getElementById("status")
 };
 
@@ -29,6 +32,16 @@ function init() {
     }
     loadSettings();
     elements.form.addEventListener("submit", handleSubmit);
+
+    // 快捷键设置页面链接
+    if (elements.openShortcutsPage) {
+      elements.openShortcutsPage.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (chromeApi && chromeApi.tabs) {
+          chromeApi.tabs.create({ url: "chrome://extensions/shortcuts" });
+        }
+      });
+    }
   } catch (error) {
     console.error("初始化失败", error);
   }
@@ -42,6 +55,7 @@ async function loadSettings() {
     elements.defaultStatusFilter.value = settings.defaultStatusFilter;
     elements.showSpeed.checked = Boolean(settings.showSpeed);
     elements.undoRemove.checked = Boolean(settings.undoRemove);
+    elements.enableNotifications.checked = Boolean(settings.enableNotifications);
   } catch (error) {
     console.error("读取设置失败", error);
     elements.status.textContent = "读取设置失败";
@@ -54,7 +68,8 @@ async function handleSubmit(event) {
     listSize: Number(elements.listSize.value),
     defaultStatusFilter: elements.defaultStatusFilter.value,
     showSpeed: elements.showSpeed.checked,
-    undoRemove: elements.undoRemove.checked
+    undoRemove: elements.undoRemove.checked,
+    enableNotifications: elements.enableNotifications.checked
   };
   try {
     await chromeStorageSet({ settings });

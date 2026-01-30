@@ -18,7 +18,9 @@ const state = {
   skeletonTimer: null,
   progressRefreshTimer: null,
   // 用于计算下载速度的快照缓存 {downloadId: {bytes, timestamp}}
-  downloadSpeedCache: new Map()
+  downloadSpeedCache: new Map(),
+  // 延迟删除队列 {downloadId: { item, timerId }}
+  pendingDeletes: new Map()
 };
 
 const elements = {
@@ -340,6 +342,10 @@ function updateActiveChip(container, value) {
 function applyFilters() {
   const keyword = state.searchText.toLowerCase();
   const filtered = state.downloads.filter((item) => {
+    // 过滤掉待删除的记录
+    if (state.pendingDeletes.has(item.id)) {
+      return false;
+    }
     if (state.statusFilter !== "all" && item.state !== state.statusFilter) {
       return false;
     }
@@ -625,15 +631,32 @@ async function removeDownload(item) {
   }
   try {
     if (choice === "delete_file" && item.state === "complete") {
-      // 同时删除磁盘文件和记录
+      // 同时删除磁盘文件和记录 - 立即执行，不支持撤销
       await chromeDownloadsRemoveFile(item.id);
       showToast("已删除文件和记录", false);
+      loadDownloads();
     } else {
-      // 仅移除记录
-      await chromeDownloadsErase({ id: item.id });
-      showToast("已移除下载记录", state.settings.undoRemove, () => undoRemove(item));
+      // 仅移除记录 - 使用延迟删除，支持撤销
+      const UNDO_DELAY_MS = 5000; // 5秒撤销窗口
+
+      // 设置定时器，超时后真正删除
+      const timerId = setTimeout(() => {
+        executePendingDelete(item.id);
+      }, UNDO_DELAY_MS);
+
+      // 添加到待删除队列
+      state.pendingDeletes.set(item.id, { item, timerId });
+
+      // 刷新列表（会自动过滤掉待删除记录）
+      applyFilters();
+
+      // 显示带撤销按钮的 Toast
+      if (state.settings.undoRemove) {
+        showToast("已移除下载记录", true, () => undoRemove(item.id));
+      } else {
+        showToast("已移除下载记录", false);
+      }
     }
-    loadDownloads();
   } catch (error) {
     console.error("移除失败", error);
     showToast("移除失败", false);
@@ -683,21 +706,41 @@ function showRemoveDialog(item) {
   });
 }
 
-async function undoRemove(item) {
-  if (!item.url) {
-    showToast("无法撤销该记录", false);
+// 真正执行删除（定时器触发时调用）
+async function executePendingDelete(downloadId) {
+  const pending = state.pendingDeletes.get(downloadId);
+  if (!pending) {
+    return; // 已被撤销或已处理
+  }
+
+  try {
+    await chromeDownloadsErase({ id: downloadId });
+  } catch (error) {
+    console.error("删除失败", error);
+  }
+
+  // 从待删除队列移除
+  state.pendingDeletes.delete(downloadId);
+}
+
+// 撤销删除（用户点击撤销按钮时调用）
+function undoRemove(downloadId) {
+  const pending = state.pendingDeletes.get(downloadId);
+  if (!pending) {
+    showToast("撤销失败：记录已被删除", false);
     return;
   }
-  try {
-    // chrome.downloads.download() 的 filename 参数只接受相对于下载目录的相对路径
-    // item.filename 是绝对路径（如 C:\Users\xxx\Downloads\file.zip），直接传入会报错
-    // 因此只传 url，让 Chrome 自动处理文件名
-    await chromeDownloadsDownload({ url: item.url });
-    showToast("已重新下载", false);
-  } catch (error) {
-    console.error("撤销失败", error);
-    showToast("撤销失败", false);
-  }
+
+  // 清除定时器，阻止真正删除
+  clearTimeout(pending.timerId);
+
+  // 从待删除队列移除
+  state.pendingDeletes.delete(downloadId);
+
+  // 刷新列表（恢复显示该记录）
+  applyFilters();
+
+  showToast("已恢复记录", false);
 }
 
 async function clearByState(stateValue, message) {

@@ -1,4 +1,4 @@
-# Download Manager Lite
+# 📥 Download Manager Lite
 
 <p align="center">
   <img src="icons/icon128.png" alt="Logo" width="128" height="128" onerror="this.style.display='none'">
@@ -8,85 +8,60 @@
   A refined, efficient Chrome download manager extension with a native macOS-style design.
 </p>
 
+<p align="center">
+  <a href="#-features">Features</a> • 
+  <a href="#-installation">Installation</a> • 
+  <a href="ROADMAP.md">Roadmap</a>
+</p>
+
+---
+
 ## ✨ Features
 
-- **📥 Modern Download Management**
-  - View download progress, speed, and time remaining in real-time.
-  - Support **Cancel** (for active downloads) and **Retry** (for failed downloads).
-  - Smart distinction between **Remove Record Only** and **Delete Local File**.
-- **🔍 Powerful Search & Filtering**
-  - Real-time search by filename and source domain.
-  - Filter by status: Downloading, Completed, Failed.
-  - Filter by type: Documents, Images, Archives, Installers, etc.
-- **🎨 Premium UI Experience**
-  - Pixel-perfect macOS-style design.
-  - Automatic Light/Dark mode support.
-  - Smooth micro-interactions and animations.
-- **🔔 Thoughtful Details**
-  - Extension icon badge shows real-time active download count.
-  - Automatic categorization of common file types (PDF, Doc, ZIP, DMG, etc.).
+### 🎨 Premium UI Experience
+- **macOS-Style Design**: Pixel-perfect native aesthetics.
+- **Auto Dark Mode**: Automatically adapts to your system theme.
+- **Smooth Animations**: Polished micro-interactions and fluid list transitions.
 
-## 🛠️ Project Structure
+### ⚡️ Powerful Management
+- **Real-time Monitoring**: View progress, download speed, and estimated time remaining.
+- **Smart Actions**: Pause, cancel, retry, open files, or reveal in Finder/Explorer.
+- **Live Badge**: Extension icon shows the count of active downloads in real-time.
 
-```
-chrome_download_manager/
-├── manifest.json              # Extension Configuration
-├── README.md                  # Chinese Documentation
-├── README_EN.md               # English Documentation
-├── LICENSE                    # MIT License
-├── src/
-│   ├── popup/                 # Main UI
-│   │   ├── popup.html
-│   │   ├── popup.js          # Logic & Rendering Engine
-│   │   └── popup.css         # Styles (macOS CSS Variables)
-│   ├── options/               # Settings Page
-│   └── background/            # Background Service (badge logic)
-└── docs/                      # Documentation & PRDs
-```
+### 🆕 Unique Capabilities
+- **New Download**: Manually initialize downloads by entering URLs directly.
+- **Undo Remove**: Removed a record by mistake? You have a **5-second undo window** to restore it instantly.
+- **Smart Deletion**: Clear distinction between **"Remove Record Only"** and **"Delete File"** to prevent data loss.
 
-## 🚀 Quick Start
+### 🔍 Search & Filter
+- **Instant Search**: Filter by filename or source domain in real-time.
+- **Keyboard Shortcuts**: Press `/` to focus search, `Esc` to clear/close.
+- **Smart Categorization**: Automatically filters files by type (Docs, Images, Archives, Installers, etc.).
 
-### 1. Installation (Developer Mode)
-1. Clone this repository locally.
+## 🚀 Installation
+
+1. Clone or download this repository.
 2. Open Chrome and navigate to `chrome://extensions/`.
 3. Enable **"Developer mode"** in the top right corner.
 4. Click **"Load unpacked"**.
-5. Select the project root directory `chrome_download_manager`.
+5. Select the project root directory.
 
-### 2. Usage
-- **Basic Actions**: Click the extension icon to open the panel. Use the buttons on the right of each item to Open, Show in Folder, Cancel, or Remove.
-- **Batch Cleaning**: Click the `...` menu in the top right to clear all completed or failed records.
-- **Settings**: Select "Settings" in the menu to customize list size and default filters.
+## 🛠 Usage Tips
+
+- **Quick Search**: Press `/` anywhere to start typing your search query.
+- **Undo**: After removing a download record, watch for the toast notification at the bottom to undo the action if needed.
+- **Batch Clear**: Use the menu in the top-right corner to clear all completed or failed downloads at once.
+
+## 🗺️ Roadmap
+
+We have ambitious plans! For future features like multi-threaded downloading and cloud sync, check out our [ROADMAP.md](ROADMAP.md).
 
 ## ⚙️ Tech Stack
 
-- **Core**: Manifest V3, Generic JavaScript (ES6+), HTML5
-- **Style**: Native CSS (CSS Variables, Flexbox, Backdrop-filter)
-- **APIs**:
-  - `chrome.downloads`: Core download management.
-  - `chrome.action`: Dynamic icon badge.
-  - `chrome.storage`: User settings synchronization.
-
-## 📝 Development Guide
-
-### Core Directories
-- `src/popup/`: Contains all UI rendering logic (`renderList`) and event bindings.
-- `src/background/`: Handles download event listeners (`onChanged`, `onCreated`) and updates the badge.
-
-### Style Customization
-Theme colors are defined in `:root` within `src/popup/popup.css` and support hot reloading:
-```css
-:root {
-  --primary: #007AFF;  /* macOS Blue */
-  --bg: #FFFFFF;       /* Light Mode Background */
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #1C1C1E;     /* Dark Mode Background */
-  }
-}
-```
+- **Manifest V3**: Secure, performant, and battery-friendly.
+- **Vanilla JS & CSS**: No heavy frameworks, ensuring instant startup times.
+- **Native APIs**: Deep integration with `chrome.downloads`, `chrome.storage`, `chrome.action`.
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file for details.
+MIT License

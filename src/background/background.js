@@ -110,10 +110,11 @@ async function showDownloadCompleteNotification(downloadId) {
         const fileName = item.filename ? item.filename.split(/[/\\]/).pop() : "未知文件";
         const fileSize = formatBytes(item.fileSize || item.totalBytes || 0);
 
-        // 创建通知
+        // 创建通知 - 使用 getURL 获取完整的扩展内部路径
+        const iconUrl = chromeApi.runtime.getURL("src/icons/icon128.png");
         chromeApi.notifications.create(`download-complete-${downloadId}`, {
             type: "basic",
-            iconUrl: "src/icons/icon128.svg",
+            iconUrl: iconUrl,
             title: "下载完成",
             message: `${fileName}\n大小: ${fileSize}`,
             priority: 1,

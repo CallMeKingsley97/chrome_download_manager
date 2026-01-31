@@ -28,6 +28,10 @@
             <button data-action="open-downloads">打开下载页</button>
             <button data-action="open-options">设置</button>
             <div class="menu-divider"></div>
+            <button data-action="view-stats">📊 统计仪表盘</button>
+            <button data-action="export-json">📁 导出 JSON</button>
+            <button data-action="export-csv">📄 导出 CSV</button>
+            <div class="menu-divider"></div>
             <button data-action="clear-complete">清理已完成记录</button>
             <button data-action="clear-failed">清理失败记录</button>
           </div>
@@ -99,6 +103,40 @@
         <button id="newDownloadSubmit" class="modal-btn primary">下载</button>
         <button id="newDownloadCancel" class="modal-btn ghost">取消</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 统计仪表盘模态框 -->
+  <div id="statisticsModal" class="modal-overlay hidden">
+    <div class="modal-content statistics-modal">
+      <h3 class="modal-title">📊 下载统计</h3>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value" id="statTotalCount">0</span>
+          <span class="stat-label">总下载数</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="statTotalSize">0 B</span>
+          <span class="stat-label">总大小</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="statCompleteCount">0</span>
+          <span class="stat-label">已完成</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="statFailedCount">0</span>
+          <span class="stat-label">失败</span>
+        </div>
+      </div>
+      <div class="stats-section">
+        <h4 class="stats-section-title">文件类型分布</h4>
+        <div id="statsTypeChart" class="stats-chart"></div>
+      </div>
+      <div class="stats-section">
+        <h4 class="stats-section-title">Top 5 下载来源</h4>
+        <ul id="statsTopDomains" class="stats-list"></ul>
+      </div>
+      <button id="statsCloseBtn" class="modal-btn ghost">关闭</button>
     </div>
   </div>
 

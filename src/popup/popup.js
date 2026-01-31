@@ -51,7 +51,16 @@ const elements = {
   newDownloadModal: document.getElementById("newDownloadModal"),
   newDownloadUrls: document.getElementById("newDownloadUrls"),
   newDownloadSubmit: document.getElementById("newDownloadSubmit"),
-  newDownloadCancel: document.getElementById("newDownloadCancel")
+  newDownloadCancel: document.getElementById("newDownloadCancel"),
+  // Statistics Modal Elements
+  statisticsModal: document.getElementById("statisticsModal"),
+  statTotalCount: document.getElementById("statTotalCount"),
+  statTotalSize: document.getElementById("statTotalSize"),
+  statCompleteCount: document.getElementById("statCompleteCount"),
+  statFailedCount: document.getElementById("statFailedCount"),
+  statsTypeChart: document.getElementById("statsTypeChart"),
+  statsTopDomains: document.getElementById("statsTopDomains"),
+  statsCloseBtn: document.getElementById("statsCloseBtn")
 };
 
 const TYPE_MAP = {
@@ -262,7 +271,14 @@ async function loadSettings() {
       showToast("请在扩展环境中打开", false);
       return;
     }
-    const stored = await chromeStorageGet(["settings"]);
+    // 优先从 chrome.storage.sync 读取 (Cloud Sync)
+    let stored = {};
+    try {
+      stored = await chromeSyncStorageGet(["settings"]);
+    } catch (syncError) {
+      console.warn("同步存储读取失败，回退到本地存储", syncError);
+      stored = await chromeStorageGet(["settings"]);
+    }
     if (stored.settings) {
       state.settings = { ...DEFAULT_SETTINGS, ...stored.settings };
     }
@@ -407,6 +423,8 @@ function renderList(items) {
     // 悬停时显示完整绝对路径，正常只显示文件名
     title.title = item.filename || "";
     title.innerHTML = highlightMatch(getFileName(item), state.searchText);
+    // 添加智能标签
+    title.appendChild(buildSmartTagElements(item));
     main.append(title);
 
     // 非下载中状态显示标准元数据
@@ -538,6 +556,18 @@ function handleMenuAction(action) {
   }
   if (action === "open-options") {
     openOptionsPage();
+    return;
+  }
+  if (action === "view-stats") {
+    showStatisticsModal();
+    return;
+  }
+  if (action === "export-json") {
+    exportData("json");
+    return;
+  }
+  if (action === "export-csv") {
+    exportData("csv");
     return;
   }
   if (action === "clear-complete") {
@@ -1353,4 +1383,299 @@ function isValidHttpUrl(str) {
   } catch (error) {
     return false;
   }
+}
+
+// ========== Statistics Dashboard ==========
+
+function calculateStats(items) {
+  const stats = {
+    totalCount: items.length,
+    totalSize: 0,
+    completeCount: 0,
+    failedCount: 0,
+    typeDistribution: {},
+    domainDistribution: {}
+  };
+
+  items.forEach((item) => {
+    // 总大小
+    stats.totalSize += item.fileSize || item.totalBytes || 0;
+
+    // 状态统计
+    if (item.state === "complete") {
+      stats.completeCount += 1;
+    } else if (item.state === "interrupted") {
+      stats.failedCount += 1;
+    }
+
+    // 类型分布
+    const type = detectFileType(item);
+    stats.typeDistribution[type] = (stats.typeDistribution[type] || 0) + 1;
+
+    // 域名分布
+    const domain = getDomain(item);
+    stats.domainDistribution[domain] = (stats.domainDistribution[domain] || 0) + 1;
+  });
+
+  return stats;
+}
+
+function renderStats(stats) {
+  // 更新数值卡片
+  elements.statTotalCount.textContent = stats.totalCount;
+  elements.statTotalSize.textContent = formatBytes(stats.totalSize);
+  elements.statCompleteCount.textContent = stats.completeCount;
+  elements.statFailedCount.textContent = stats.failedCount;
+
+  // 渲染文件类型分布图
+  elements.statsTypeChart.innerHTML = "";
+  const maxTypeCount = Math.max(...Object.values(stats.typeDistribution), 1);
+  const typeLabels = {
+    document: "文档",
+    spreadsheet: "表格",
+    image: "图片",
+    archive: "压缩包",
+    installer: "安装包",
+    other: "其他"
+  };
+
+  Object.entries(stats.typeDistribution)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([type, count]) => {
+      const row = document.createElement("div");
+      row.className = "stats-chart-row";
+
+      const label = document.createElement("span");
+      label.className = "stats-chart-label";
+      label.textContent = typeLabels[type] || type;
+
+      const barContainer = document.createElement("div");
+      barContainer.className = "stats-chart-bar-container";
+
+      const bar = document.createElement("div");
+      bar.className = "stats-chart-bar";
+      bar.style.width = `${(count / maxTypeCount) * 100}%`;
+      bar.style.background = TYPE_COLORS[type] || TYPE_COLORS.other;
+
+      const countSpan = document.createElement("span");
+      countSpan.className = "stats-chart-count";
+      countSpan.textContent = count;
+
+      bar.appendChild(countSpan);
+      barContainer.appendChild(bar);
+      row.append(label, barContainer);
+      elements.statsTypeChart.appendChild(row);
+    });
+
+  // 渲染 Top 5 域名
+  elements.statsTopDomains.innerHTML = "";
+  const topDomains = Object.entries(stats.domainDistribution)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  topDomains.forEach(([domain, count]) => {
+    const li = document.createElement("li");
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "domain-name";
+    nameSpan.textContent = domain;
+    const countSpan = document.createElement("span");
+    countSpan.className = "domain-count";
+    countSpan.textContent = count;
+    li.append(nameSpan, countSpan);
+    elements.statsTopDomains.appendChild(li);
+  });
+
+  if (topDomains.length === 0) {
+    const li = document.createElement("li");
+    li.textContent = "暂无数据";
+    li.style.justifyContent = "center";
+    li.style.color = "var(--muted)";
+    elements.statsTopDomains.appendChild(li);
+  }
+}
+
+function showStatisticsModal() {
+  const stats = calculateStats(state.downloads);
+  renderStats(stats);
+  elements.statisticsModal.classList.remove("hidden");
+
+  // 绑定关闭事件
+  const closeHandler = () => {
+    elements.statisticsModal.classList.add("hidden");
+    elements.statsCloseBtn.removeEventListener("click", closeHandler);
+    elements.statisticsModal.removeEventListener("click", overlayClickHandler);
+  };
+
+  const overlayClickHandler = (event) => {
+    if (event.target === elements.statisticsModal) {
+      closeHandler();
+    }
+  };
+
+  elements.statsCloseBtn.addEventListener("click", closeHandler);
+  elements.statisticsModal.addEventListener("click", overlayClickHandler);
+}
+
+// ========== Export Functions ==========
+
+function exportData(format) {
+  if (state.downloads.length === 0) {
+    showToast("没有可导出的数据", false);
+    return;
+  }
+
+  let content = "";
+  let filename = "";
+  const timestamp = new Date().toISOString().slice(0, 10);
+
+  if (format === "json") {
+    const exportItems = state.downloads.map((item) => ({
+      id: item.id,
+      filename: getFileName(item),
+      url: item.finalUrl || item.url || "",
+      size: item.fileSize || item.totalBytes || 0,
+      state: item.state,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      domain: getDomain(item),
+      type: detectFileType(item)
+    }));
+    content = JSON.stringify(exportItems, null, 2);
+    filename = `downloads_${timestamp}.json`;
+  } else if (format === "csv") {
+    const headers = ["ID", "文件名", "URL", "大小(字节)", "状态", "开始时间", "结束时间", "来源域名", "类型"];
+    const rows = state.downloads.map((item) => [
+      item.id,
+      `"${getFileName(item).replace(/"/g, '""')}"`,
+      `"${(item.finalUrl || item.url || "").replace(/"/g, '""')}"`,
+      item.fileSize || item.totalBytes || 0,
+      item.state,
+      item.startTime || "",
+      item.endTime || "",
+      getDomain(item),
+      detectFileType(item)
+    ]);
+    content = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+    // Add BOM for Excel to correctly recognize UTF-8
+    content = "\uFEFF" + content;
+    filename = `downloads_${timestamp}.csv`;
+  }
+
+  triggerFileDownload(content, filename, format === "json" ? "application/json" : "text/csv;charset=utf-8");
+  showToast(`已导出 ${state.downloads.length} 条记录`, false);
+}
+
+function triggerFileDownload(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ========== Cloud Sync Storage ==========
+
+function chromeSyncStorageGet(keys) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!chromeApi || !chromeApi.storage || !chromeApi.storage.sync) {
+        reject(new Error("同步存储 API 不可用"));
+        return;
+      }
+      chromeApi.storage.sync.get(keys, (items) => {
+        const error = chromeApi.runtime.lastError;
+        if (error) {
+          console.error("storage.sync.get 失败", error.message);
+          reject(error);
+          return;
+        }
+        resolve(items || {});
+      });
+    } catch (error) {
+      console.error("storage.sync.get 异常", error);
+      reject(error);
+    }
+  });
+}
+
+function chromeSyncStorageSet(items) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!chromeApi || !chromeApi.storage || !chromeApi.storage.sync) {
+        reject(new Error("同步存储 API 不可用"));
+        return;
+      }
+      chromeApi.storage.sync.set(items, () => {
+        const error = chromeApi.runtime.lastError;
+        if (error) {
+          console.error("storage.sync.set 失败", error.message);
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    } catch (error) {
+      console.error("storage.sync.set 异常", error);
+      reject(error);
+    }
+  });
+}
+
+// ========== Smart Tags ==========
+
+/**
+ * 生成智能标签
+ * 基于元数据 (时间、域名) 生成标签
+ */
+function generateTags(item) {
+  const tags = [];
+  const now = new Date();
+
+  // 时间标签
+  if (item.startTime) {
+    const startDate = new Date(item.startTime);
+    const diffMs = now - startDate;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+    if (diffDays < 1) {
+      tags.push({ label: "今天", class: "today" });
+    } else if (diffDays < 7) {
+      tags.push({ label: "本周", class: "last-week" });
+    }
+  }
+
+  // 域名标签 - 识别常见平台
+  const domain = getDomain(item).toLowerCase();
+  const workDomains = ["github.com", "gitlab.com", "notion.so", "figma.com", "docs.google.com"];
+  const socialDomains = ["twitter.com", "x.com", "facebook.com", "instagram.com", "weibo.com", "bilibili.com"];
+
+  if (workDomains.some((d) => domain.includes(d))) {
+    tags.push({ label: "办公", class: "work" });
+  }
+  if (socialDomains.some((d) => domain.includes(d))) {
+    tags.push({ label: "社交", class: "social" });
+  }
+
+  return tags;
+}
+
+/**
+ * 构建智能标签 HTML 元素
+ */
+function buildSmartTagElements(item) {
+  const tags = generateTags(item);
+  const fragment = document.createDocumentFragment();
+
+  tags.forEach((tag) => {
+    const span = document.createElement("span");
+    span.className = `smart-tag ${tag.class}`;
+    span.textContent = tag.label;
+    fragment.appendChild(span);
+  });
+
+  return fragment;
 }

@@ -4,7 +4,15 @@ const DEFAULT_SETTINGS = {
   listSize: 50,
   defaultStatusFilter: "all",
   showSpeed: false,
-  undoRemove: true
+  undoRemove: true,
+  smartTags: {
+    enabled: true,
+    showTime: true,
+    timeWindowDays: 7,
+    showDomain: true,
+    workDomains: ["github.com", "gitlab.com", "notion.so", "figma.com", "docs.google.com"],
+    socialDomains: ["twitter.com", "x.com", "facebook.com", "instagram.com", "weibo.com", "bilibili.com"]
+  }
 };
 
 const state = {
@@ -128,6 +136,7 @@ function bindEvents() {
   elements.menuButton.addEventListener("click", (event) => {
     event.stopPropagation();
     event.preventDefault();
+    closeActionMenus();
     // 直接切换菜单状态，避免事件冒泡导致自动打开
     const isHidden = elements.menuPanel.classList.contains("hidden");
     if (isHidden) {
@@ -151,6 +160,9 @@ function bindEvents() {
     if (!event.target.closest(".more-menu")) {
       closeMenu();
     }
+    if (!event.target.closest(".action-menu")) {
+      closeActionMenus();
+    }
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "/" && document.activeElement !== elements.searchInput) {
@@ -160,6 +172,7 @@ function bindEvents() {
     if (event.key === "Escape") {
       closeMenu();
       hideNewDownloadModal();
+      closeActionMenus();
     }
   });
 
@@ -265,6 +278,12 @@ function renderSkeleton() {
   }
 }
 
+function mergeSettings(storedSettings) {
+  const settings = storedSettings ? { ...DEFAULT_SETTINGS, ...storedSettings } : { ...DEFAULT_SETTINGS };
+  settings.smartTags = { ...DEFAULT_SETTINGS.smartTags, ...(storedSettings && storedSettings.smartTags ? storedSettings.smartTags : {}) };
+  return settings;
+}
+
 async function loadSettings() {
   try {
     if (!chromeApi || !chromeApi.storage) {
@@ -279,9 +298,7 @@ async function loadSettings() {
       console.warn("同步存储读取失败，回退到本地存储", syncError);
       stored = await chromeStorageGet(["settings"]);
     }
-    if (stored.settings) {
-      state.settings = { ...DEFAULT_SETTINGS, ...stored.settings };
-    }
+    state.settings = mergeSettings(stored.settings);
   } catch (error) {
     console.error("读取设置失败", error);
   }
@@ -493,19 +510,32 @@ function renderList(items) {
     const actions = document.createElement("div");
     actions.className = "action-group";
 
+    let primaryAction = null;
+    const secondaryActions = [];
+
     if (item.state === "complete") {
-      actions.append(
-        buildActionButton("打开", "primary", () => openFile(item)),
-        buildActionButton("定位", "", () => showInFolder(item))
-      );
+      primaryAction = { label: "打开", variant: "primary", onClick: () => openFile(item) };
+      secondaryActions.push({ label: "定位", onClick: () => showInFolder(item) });
     }
     if (item.state === "interrupted") {
-      actions.append(buildActionButton("重试", "primary", () => retryDownload(item)));
+      primaryAction = { label: "重试", variant: "primary", onClick: () => retryDownload(item) };
     }
     if (isDownloading) {
-      actions.append(buildActionButton("取消", "danger", () => cancelDownload(item)));
+      primaryAction = { label: "取消", variant: "danger", onClick: () => cancelDownload(item) };
     }
-    actions.append(buildActionButton("移除", "", () => removeDownload(item)));
+
+    secondaryActions.push({ label: "移除", variant: "danger", onClick: () => removeDownload(item) });
+
+    if (primaryAction) {
+      actions.append(buildActionButton(primaryAction.label, primaryAction.variant, primaryAction.onClick));
+    } else {
+      actions.append(buildActionButton("移除", "", () => removeDownload(item)));
+      secondaryActions.length = 0;
+    }
+
+    if (secondaryActions.length > 0) {
+      actions.append(buildActionMenu(secondaryActions));
+    }
 
     card.append(icon, main, actions);
     elements.downloadList.appendChild(card);
@@ -516,7 +546,7 @@ function updateDownloadIndicator() {
   const downloadingCount = state.downloads.filter((item) => item.state === "in_progress" || item.state === "downloading").length;
   if (downloadingCount > 0) {
     elements.downloadIndicator.classList.remove("hidden");
-    elements.downloadIndicatorText.innerHTML = `正在下载 <span class="count">${downloadingCount}</span> 项`;
+    elements.downloadIndicatorText.innerHTML = `下载中 <span class="count">${downloadingCount}</span>`;
   } else {
     elements.downloadIndicator.classList.add("hidden");
     elements.downloadIndicatorText.textContent = "正在下载";
@@ -526,6 +556,7 @@ function updateDownloadIndicator() {
 function buildActionButton(label, variant, onClick) {
   const button = document.createElement("button");
   button.className = `action-button ${variant}`.trim();
+  button.type = "button";
   button.textContent = label;
   button.addEventListener("click", () => {
     button.disabled = true;
@@ -534,6 +565,50 @@ function buildActionButton(label, variant, onClick) {
     });
   });
   return button;
+}
+
+function buildActionMenu(actions) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "action-menu";
+
+  const trigger = document.createElement("button");
+  trigger.className = "action-menu-trigger";
+  trigger.type = "button";
+  trigger.setAttribute("aria-label", "更多操作");
+  trigger.textContent = "⋯";
+
+  const panel = document.createElement("div");
+  panel.className = "action-menu-panel";
+
+  actions.forEach((item) => {
+    const button = document.createElement("button");
+    button.className = `action-menu-item ${item.variant || ""}`.trim();
+    button.type = "button";
+    button.textContent = item.label;
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      wrapper.classList.remove("open");
+      item.onClick().finally(() => {
+        button.disabled = false;
+      });
+    });
+    panel.appendChild(button);
+  });
+
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    closeActionMenus();
+    wrapper.classList.toggle("open");
+  });
+
+  wrapper.append(trigger, panel);
+  return wrapper;
+}
+
+function closeActionMenus() {
+  document.querySelectorAll(".action-menu.open").forEach((menu) => {
+    menu.classList.remove("open");
+  });
 }
 
 function buildInfoPill(label, value, variant) {
@@ -1633,34 +1708,51 @@ function chromeSyncStorageSet(items) {
  */
 function generateTags(item) {
   const tags = [];
+  const config = state.settings && state.settings.smartTags ? state.settings.smartTags : DEFAULT_SETTINGS.smartTags;
+  if (!config.enabled) {
+    return tags;
+  }
   const now = new Date();
 
   // 时间标签
-  if (item.startTime) {
+  if (config.showTime && item.startTime) {
     const startDate = new Date(item.startTime);
     const diffMs = now - startDate;
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const windowDays = Number(config.timeWindowDays) || 7;
 
-    if (diffDays < 1) {
+    if (diffDays < 1 && windowDays >= 1) {
       tags.push({ label: "今天", class: "today" });
-    } else if (diffDays < 7) {
-      tags.push({ label: "本周", class: "last-week" });
+    } else if (diffDays < windowDays) {
+      const label = windowDays <= 7 ? "本周" : `近${windowDays}天`;
+      tags.push({ label, class: "last-week" });
     }
   }
 
   // 域名标签 - 识别常见平台
-  const domain = getDomain(item).toLowerCase();
-  const workDomains = ["github.com", "gitlab.com", "notion.so", "figma.com", "docs.google.com"];
-  const socialDomains = ["twitter.com", "x.com", "facebook.com", "instagram.com", "weibo.com", "bilibili.com"];
+  if (config.showDomain) {
+    const domain = getDomain(item).toLowerCase();
+    const workDomains = normalizeDomainList(config.workDomains);
+    const socialDomains = normalizeDomainList(config.socialDomains);
 
-  if (workDomains.some((d) => domain.includes(d))) {
-    tags.push({ label: "办公", class: "work" });
-  }
-  if (socialDomains.some((d) => domain.includes(d))) {
-    tags.push({ label: "社交", class: "social" });
+    if (domain && workDomains.some((d) => domain.includes(d))) {
+      tags.push({ label: "办公", class: "work" });
+    }
+    if (domain && socialDomains.some((d) => domain.includes(d))) {
+      tags.push({ label: "社交", class: "social" });
+    }
   }
 
   return tags;
+}
+
+function normalizeDomainList(list) {
+  if (!Array.isArray(list)) {
+    return [];
+  }
+  return list
+    .map((value) => String(value).trim().toLowerCase())
+    .filter(Boolean);
 }
 
 /**

@@ -44,6 +44,43 @@
 
       <div class="section-divider"></div>
 
+      <div class="field">
+        <span class="section-title">智能标签</span>
+      </div>
+      <label class="field checkbox">
+        <input type="checkbox" id="enableSmartTags" />
+        <span>启用智能标签</span>
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="smartTagsShowTime" />
+        <span>显示时间标签</span>
+      </label>
+      <label class="field">
+        <span>时间范围</span>
+        <select id="smartTagsTimeWindow">
+          <option value="1">仅今天</option>
+          <option value="7">7 天内</option>
+          <option value="30">30 天内</option>
+        </select>
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="smartTagsShowDomain" />
+        <span>显示域名标签</span>
+      </label>
+      <label class="field">
+        <span>办公域名（逗号或换行分隔）</span>
+        <textarea id="smartTagsWorkDomains" rows="3" placeholder="github.com, notion.so"></textarea>
+      </label>
+      <label class="field">
+        <span>社交域名（逗号或换行分隔）</span>
+        <textarea id="smartTagsSocialDomains" rows="3" placeholder="x.com, twitter.com"></textarea>
+      </label>
+      <div class="field field-hint">
+        <span>提示：只需要填写域名，例如 github.com</span>
+      </div>
+
+      <div class="section-divider"></div>
+
       <div class="field shortcut-info">
         <span class="section-title">快捷键</span>
         <ul class="shortcut-list">

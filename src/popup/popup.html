@@ -19,21 +19,21 @@
         <button id="newDownloadBtn" class="icon-button new-download-btn">+ 新建</button>
         <div id="downloadIndicator" class="download-indicator hidden">
           <span class="dot"></span>
-          <span id="downloadIndicatorText">正在下载</span>
+          <span id="downloadIndicatorText">下载中</span>
         </div>
         <button id="toggleFilters" class="icon-button" aria-label="筛选">筛选</button>
         <div class="more-menu">
           <button id="menuButton" class="icon-button" aria-label="更多">⋯</button>
           <div id="menuPanel" class="menu-panel hidden">
-            <button data-action="open-downloads">打开下载页</button>
-            <button data-action="open-options">设置</button>
+            <button data-action="open-downloads"><span class="menu-icon">⬇️</span><span class="menu-text">打开下载页</span></button>
+            <button data-action="open-options"><span class="menu-icon">⚙️</span><span class="menu-text">设置</span></button>
             <div class="menu-divider"></div>
-            <button data-action="view-stats">📊 统计仪表盘</button>
-            <button data-action="export-json">📁 导出 JSON</button>
-            <button data-action="export-csv">📄 导出 CSV</button>
+            <button data-action="view-stats"><span class="menu-icon">📊</span><span class="menu-text">统计仪表盘</span></button>
+            <button data-action="export-json"><span class="menu-icon">📁</span><span class="menu-text">导出 JSON</span></button>
+            <button data-action="export-csv"><span class="menu-icon">📄</span><span class="menu-text">导出 CSV</span></button>
             <div class="menu-divider"></div>
-            <button data-action="clear-complete">清理已完成记录</button>
-            <button data-action="clear-failed">清理失败记录</button>
+            <button data-action="clear-complete"><span class="menu-icon">✅</span><span class="menu-text">清理已完成记录</span></button>
+            <button data-action="clear-failed"><span class="menu-icon">🗑️</span><span class="menu-text">清理失败记录</span></button>
           </div>
         </div>
       </div>

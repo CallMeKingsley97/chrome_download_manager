@@ -72,7 +72,7 @@ const elements = {
 };
 
 const TYPE_MAP = {
-  document: ["pdf", "doc", "docx", "ppt", "pptx"],
+  document: ["pdf", "doc", "docx", "ppt", "pptx", "txt"],
   spreadsheet: ["xls", "xlsx", "csv"],
   image: ["png", "jpg", "jpeg", "webp", "gif", "svg"],
   archive: ["zip", "rar", "7z"],

@@ -146,7 +146,8 @@ function bindEvents() {
     }
   });
   elements.menuPanel.addEventListener("click", (event) => {
-    const action = event.target.dataset.action;
+    const actionElement = event.target.closest('[data-action]');
+    const action = actionElement ? actionElement.dataset.action : null;
     if (!action) {
       return;
     }

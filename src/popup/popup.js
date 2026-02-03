@@ -1714,17 +1714,18 @@ function generateTags(item) {
     return tags;
   }
   const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
   // 时间标签
   if (config.showTime && item.startTime) {
     const startDate = new Date(item.startTime);
-    const diffMs = now - startDate;
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const startOfStartDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const diffDays = (startOfToday - startOfStartDay) / (1000 * 60 * 60 * 24);
     const windowDays = Number(config.timeWindowDays) || 7;
 
-    if (diffDays < 1 && windowDays >= 1) {
+    if (diffDays === 0 && windowDays >= 1) {
       tags.push({ label: "今天", class: "today" });
-    } else if (diffDays < windowDays) {
+    } else if (diffDays > 0 && diffDays < windowDays) {
       const label = windowDays <= 7 ? "本周" : `近${windowDays}天`;
       tags.push({ label, class: "last-week" });
     }

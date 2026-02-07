@@ -70,7 +70,8 @@ form {
   font-size: 14px;
 }
 
-.field select {
+.field select,
+.field input[type="time"] {
   padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
@@ -221,6 +222,7 @@ kbd {
 
 .primary:focus-visible,
 .field select:focus-visible,
+.field input[type="time"]:focus-visible,
 .field textarea:focus-visible,
 .link:focus-visible,
 input[type="checkbox"]:focus-visible {

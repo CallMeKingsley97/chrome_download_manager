@@ -4,16 +4,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>下载管理设置</title>
+  <title data-i18n="optionsTitle">下载管理设置</title>
   <link rel="stylesheet" href="options.css" />
 </head>
 
 <body>
   <div class="container">
-    <h1>下载管理设置</h1>
+    <h1 data-i18n="optionsTitle">下载管理设置</h1>
     <form id="settingsForm">
       <label class="field">
-        <span>列表显示条数</span>
+        <span data-i18n="optionsListSize">列表显示条数</span>
         <select id="listSize">
           <option value="20">20</option>
           <option value="50">50</option>
@@ -21,78 +21,112 @@
         </select>
       </label>
       <label class="field">
-        <span>默认筛选</span>
+        <span data-i18n="optionsDefaultFilter">默认筛选</span>
         <select id="defaultStatusFilter">
-          <option value="all">全部</option>
-          <option value="downloading">仅下载中</option>
-          <option value="complete">仅已完成</option>
-          <option value="interrupted">仅失败</option>
+          <option value="all" data-i18n="optionsFilterAll">全部</option>
+          <option value="downloading" data-i18n="optionsFilterDownloading">仅下载中</option>
+          <option value="complete" data-i18n="optionsFilterComplete">仅已完成</option>
+          <option value="interrupted" data-i18n="optionsFilterInterrupted">仅失败</option>
         </select>
       </label>
       <label class="field checkbox">
         <input type="checkbox" id="showSpeed" />
-        <span>显示已下载大小（下载中）</span>
+        <span data-i18n="optionsShowSpeed">显示已下载大小（下载中）</span>
       </label>
       <label class="field checkbox">
         <input type="checkbox" id="undoRemove" />
-        <span>移除记录后显示撤销入口</span>
+        <span data-i18n="optionsUndoRemove">移除记录后显示撤销入口</span>
       </label>
       <label class="field checkbox">
         <input type="checkbox" id="enableNotifications" />
-        <span>下载完成时发送系统通知</span>
+        <span data-i18n="optionsEnableNotifications">下载完成时发送系统通知</span>
       </label>
 
       <div class="section-divider"></div>
 
       <div class="field">
-        <span class="section-title">智能标签</span>
+        <span class="section-title" data-i18n="optionsSectionSmartTags">智能标签</span>
       </div>
       <label class="field checkbox">
         <input type="checkbox" id="enableSmartTags" />
-        <span>启用智能标签</span>
+        <span data-i18n="optionsEnableSmartTags">启用智能标签</span>
       </label>
       <label class="field checkbox">
         <input type="checkbox" id="smartTagsShowTime" />
-        <span>显示时间标签</span>
+        <span data-i18n="optionsSmartTagsShowTime">显示时间标签</span>
       </label>
       <label class="field">
-        <span>时间范围</span>
+        <span data-i18n="optionsSmartTagsTimeWindow">时间范围</span>
         <select id="smartTagsTimeWindow">
-          <option value="1">仅今天</option>
-          <option value="7">7 天内</option>
-          <option value="30">30 天内</option>
+          <option value="1" data-i18n="optionsSmartTagsToday">仅今天</option>
+          <option value="7" data-i18n="optionsSmartTags7Days">7 天内</option>
+          <option value="30" data-i18n="optionsSmartTags30Days">30 天内</option>
         </select>
       </label>
       <label class="field checkbox">
         <input type="checkbox" id="smartTagsShowDomain" />
-        <span>显示域名标签</span>
+        <span data-i18n="optionsSmartTagsShowDomain">显示域名标签</span>
       </label>
       <label class="field">
-        <span>办公域名（逗号或换行分隔）</span>
+        <span data-i18n="optionsSmartTagsWorkDomains">办公域名（逗号或换行分隔）</span>
         <textarea id="smartTagsWorkDomains" rows="3" placeholder="github.com, notion.so"></textarea>
       </label>
       <label class="field">
-        <span>社交域名（逗号或换行分隔）</span>
+        <span data-i18n="optionsSmartTagsSocialDomains">社交域名（逗号或换行分隔）</span>
         <textarea id="smartTagsSocialDomains" rows="3" placeholder="x.com, twitter.com"></textarea>
       </label>
       <div class="field field-hint">
-        <span>提示：只需要填写域名，例如 github.com</span>
+        <span data-i18n="optionsSmartTagsHint">提示：只需要填写域名，例如 github.com</span>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="field">
+        <span class="section-title" data-i18n="optionsSectionSchedule">计划任务</span>
+      </div>
+      <label class="field checkbox">
+        <input type="checkbox" id="scheduleEnabled" />
+        <span data-i18n="optionsEnableSchedule">启用每日定时下载</span>
+      </label>
+      <label class="field">
+        <span data-i18n="optionsScheduleTime">执行时间</span>
+        <input id="scheduleTime" type="time" step="60" value="02:00" />
+      </label>
+      <label class="field">
+        <span data-i18n="optionsScheduleUrls">计划下载地址（逗号或换行分隔）</span>
+        <textarea id="scheduleUrls" rows="3" data-i18n-placeholder="optionsScheduleUrlsPlaceholder" placeholder="https://example.com/night-build.zip"></textarea>
+      </label>
+      <div class="field field-hint">
+        <span data-i18n="optionsScheduleHint">每天到点后自动按顺序下载这些地址。</span>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="field">
+        <span class="section-title" data-i18n="optionsSectionTakeover">浏览器接管</span>
+      </div>
+      <label class="field checkbox">
+        <input type="checkbox" id="takeoverEnabled" />
+        <span data-i18n="optionsEnableTakeover">接管下载体验（隐藏原生下载条）</span>
+      </label>
+      <div class="field field-hint">
+        <span data-i18n="optionsTakeoverHint">开启后优先使用扩展管理下载任务，可随时关闭恢复原生行为。</span>
       </div>
 
       <div class="section-divider"></div>
 
       <div class="field shortcut-info">
-        <span class="section-title">快捷键</span>
+        <span class="section-title" data-i18n="optionsSectionShortcuts">快捷键</span>
         <ul class="shortcut-list">
-          <li><kbd>Ctrl+Shift+C</kbd> <span>清理已完成记录</span></li>
-          <li><kbd>Ctrl+Shift+X</kbd> <span>清理失败记录</span></li>
-          <li><kbd>/</kbd> <span>聚焦搜索框 (在 Popup 中)</span></li>
-          <li><kbd>Escape</kbd> <span>关闭菜单/弹窗</span></li>
+          <li><kbd>Ctrl+Shift+C</kbd> <span data-i18n="optionsShortcutClearCompleted">清理已完成记录</span></li>
+          <li><kbd>Ctrl+Shift+X</kbd> <span data-i18n="optionsShortcutClearFailed">清理失败记录</span></li>
+          <li><kbd>/</kbd> <span data-i18n="optionsShortcutFocusSearch">聚焦搜索框 (在 Popup 中)</span></li>
+          <li><kbd>Escape</kbd> <span data-i18n="optionsShortcutCloseModal">关闭菜单/弹窗</span></li>
         </ul>
-        <a href="#" id="openShortcutsPage" class="link">自定义快捷键...</a>
+        <a href="#" id="openShortcutsPage" class="link" data-i18n="optionsCustomizeShortcuts">自定义快捷键...</a>
       </div>
 
-      <button class="primary" type="submit">保存设置</button>
+      <button class="primary" type="submit" data-i18n="optionsSaveSettings">保存设置</button>
       <div id="status" class="status"></div>
     </form>
   </div>

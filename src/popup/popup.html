@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>下载管理</title>
+  <title data-i18n="popupTitle">下载管理</title>
   <link rel="stylesheet" href="popup.css" />
 </head>
 
@@ -12,28 +12,28 @@
   <div class="app">
     <header class="header">
       <div class="search-box">
-        <input id="searchInput" type="text" placeholder="搜索文件名或域名" autocomplete="off" />
-        <button id="clearSearch" class="icon-button hidden" aria-label="清空搜索">✕</button>
+        <input id="searchInput" type="text" data-i18n-placeholder="searchPlaceholder" placeholder="搜索文件名或域名" autocomplete="off" />
+        <button id="clearSearch" class="icon-button hidden" data-i18n-aria="ariaClearSearch" aria-label="清空搜索">✕</button>
       </div>
       <div class="header-actions">
-        <button id="newDownloadBtn" class="icon-button new-download-btn">+ 新建</button>
+        <button id="newDownloadBtn" class="icon-button new-download-btn" data-i18n="buttonNewDownload">+ 新建</button>
         <div id="downloadIndicator" class="download-indicator hidden">
           <span class="dot"></span>
-          <span id="downloadIndicatorText">下载中</span>
+          <span id="downloadIndicatorText" data-i18n="downloadingLabel">下载中</span>
         </div>
-        <button id="toggleFilters" class="icon-button" aria-label="筛选">筛选</button>
+        <button id="toggleFilters" class="icon-button" data-i18n="ariaToggleFilters" data-i18n-aria="ariaToggleFilters" aria-label="筛选">筛选</button>
         <div class="more-menu">
-          <button id="menuButton" class="icon-button" aria-label="更多">⋯</button>
+          <button id="menuButton" class="icon-button" data-i18n-aria="ariaMoreActions" aria-label="更多">⋯</button>
           <div id="menuPanel" class="menu-panel hidden">
-            <button data-action="open-downloads"><span class="menu-icon">⬇️</span><span class="menu-text">打开下载页</span></button>
-            <button data-action="open-options"><span class="menu-icon">⚙️</span><span class="menu-text">设置</span></button>
+            <button data-action="open-downloads"><span class="menu-icon">⬇️</span><span class="menu-text" data-i18n="menuOpenDownloads">打开下载页</span></button>
+            <button data-action="open-options"><span class="menu-icon">⚙️</span><span class="menu-text" data-i18n="menuOpenOptions">设置</span></button>
             <div class="menu-divider"></div>
-            <button data-action="view-stats"><span class="menu-icon">📊</span><span class="menu-text">统计仪表盘</span></button>
-            <button data-action="export-json"><span class="menu-icon">📁</span><span class="menu-text">导出 JSON</span></button>
-            <button data-action="export-csv"><span class="menu-icon">📄</span><span class="menu-text">导出 CSV</span></button>
+            <button data-action="view-stats"><span class="menu-icon">📊</span><span class="menu-text" data-i18n="menuViewStats">统计仪表盘</span></button>
+            <button data-action="export-json"><span class="menu-icon">📁</span><span class="menu-text" data-i18n="menuExportJson">导出 JSON</span></button>
+            <button data-action="export-csv"><span class="menu-icon">📄</span><span class="menu-text" data-i18n="menuExportCsv">导出 CSV</span></button>
             <div class="menu-divider"></div>
-            <button data-action="clear-complete"><span class="menu-icon">✅</span><span class="menu-text">清理已完成记录</span></button>
-            <button data-action="clear-failed"><span class="menu-icon">🗑️</span><span class="menu-text">清理失败记录</span></button>
+            <button data-action="clear-complete"><span class="menu-icon">✅</span><span class="menu-text" data-i18n="menuClearComplete">清理已完成记录</span></button>
+            <button data-action="clear-failed"><span class="menu-icon">🗑️</span><span class="menu-text" data-i18n="menuClearFailed">清理失败记录</span></button>
           </div>
         </div>
       </div>
@@ -41,24 +41,24 @@
 
     <section id="filters" class="filters hidden">
       <div class="filter-group">
-        <div class="filter-label">状态</div>
+        <div class="filter-label" data-i18n="filterStatus">状态</div>
         <div class="chip-group" id="statusFilters">
-          <button class="chip" data-value="all">全部</button>
-          <button class="chip" data-value="downloading">下载中</button>
-          <button class="chip" data-value="complete">已完成</button>
-          <button class="chip" data-value="interrupted">失败</button>
+          <button class="chip" data-value="all" data-i18n="statusAll">全部</button>
+          <button class="chip" data-value="downloading" data-i18n="statusDownloading">下载中</button>
+          <button class="chip" data-value="complete" data-i18n="statusComplete">已完成</button>
+          <button class="chip" data-value="interrupted" data-i18n="statusInterrupted">失败</button>
         </div>
       </div>
       <div class="filter-group">
-        <div class="filter-label">类型</div>
+        <div class="filter-label" data-i18n="filterType">类型</div>
         <div class="chip-group" id="typeFilters">
-          <button class="chip" data-value="all">全部</button>
-          <button class="chip" data-value="document">文档</button>
-          <button class="chip" data-value="spreadsheet">表格</button>
-          <button class="chip" data-value="image">图片</button>
-          <button class="chip" data-value="archive">压缩包</button>
-          <button class="chip" data-value="installer">安装包</button>
-          <button class="chip" data-value="other">其他</button>
+          <button class="chip" data-value="all" data-i18n="typeAll">全部</button>
+          <button class="chip" data-value="document" data-i18n="typeDocument">文档</button>
+          <button class="chip" data-value="spreadsheet" data-i18n="typeSpreadsheet">表格</button>
+          <button class="chip" data-value="image" data-i18n="typeImage">图片</button>
+          <button class="chip" data-value="archive" data-i18n="typeArchive">压缩包</button>
+          <button class="chip" data-value="installer" data-i18n="typeInstaller">安装包</button>
+          <button class="chip" data-value="other" data-i18n="typeOther">其他</button>
         </div>
       </div>
     </section>
@@ -66,9 +66,9 @@
     <main class="content">
       <div id="skeleton" class="skeleton-list hidden"></div>
       <div id="emptyState" class="empty-state hidden">
-        <div class="empty-title">暂无下载记录</div>
-        <div class="empty-desc">去下载点什么吧</div>
-        <button id="resetFilters" class="ghost-button hidden">清空搜索</button>
+        <div class="empty-title" data-i18n="emptyNoDownloadsTitle">暂无下载记录</div>
+        <div class="empty-desc" data-i18n="emptyNoDownloadsDesc">去下载点什么吧</div>
+        <button id="resetFilters" class="ghost-button hidden" data-i18n="buttonResetSearch">清空搜索</button>
       </div>
       <ul id="downloadList" class="download-list"></ul>
     </main>
@@ -76,67 +76,64 @@
 
   <div id="toast" class="toast hidden">
     <span id="toastMessage"></span>
-    <button id="toastAction" class="toast-action hidden">撤销</button>
+    <button id="toastAction" class="toast-action hidden" data-i18n="buttonUndo">撤销</button>
   </div>
 
-  <!-- 移除确认模态框 -->
   <div id="removeConfirmModal" class="modal-overlay hidden">
     <div class="modal-content">
-      <h3 class="modal-title">移除下载</h3>
-      <p class="modal-desc">您希望如何处理此下载任务？</p>
+      <h3 class="modal-title" data-i18n="removeModalTitle">移除下载</h3>
+      <p class="modal-desc" data-i18n="removeModalDesc">您希望如何处理此下载任务？</p>
       <div class="modal-actions">
-        <button id="modalBtnRemoveRecord" class="modal-btn secondary">仅移除记录</button>
-        <button id="modalBtnDeleteFile" class="modal-btn danger">删除文件并移除记录</button>
+        <button id="modalBtnRemoveRecord" class="modal-btn secondary" data-i18n="removeModalOnlyRecord">仅移除记录</button>
+        <button id="modalBtnDeleteFile" class="modal-btn danger" data-i18n="removeModalDeleteFile">删除文件并移除记录</button>
       </div>
-      <button id="modalBtnCancel" class="modal-btn ghost">取消</button>
+      <button id="modalBtnCancel" class="modal-btn ghost" data-i18n="buttonCancel">取消</button>
     </div>
   </div>
 
-  <!-- 新建下载模态框 -->
   <div id="newDownloadModal" class="modal-overlay hidden">
     <div class="modal-content new-download-modal">
-      <h3 class="modal-title">新建下载</h3>
-      <p class="modal-desc">请输入下载项地址。一行一项，只支持HTTP、HTTPS协议地址</p>
-      <textarea id="newDownloadUrls" class="url-input" rows="6"
+      <h3 class="modal-title" data-i18n="newDownloadModalTitle">新建下载</h3>
+      <p class="modal-desc" data-i18n="newDownloadModalDesc">请输入下载项地址。一行一项，只支持HTTP、HTTPS协议地址</p>
+      <textarea id="newDownloadUrls" class="url-input" rows="6" data-i18n-placeholder="newDownloadPlaceholder"
         placeholder="https://example.com/file1.zip&#10;https://example.com/file2.pdf"></textarea>
       <div class="modal-actions horizontal">
-        <button id="newDownloadSubmit" class="modal-btn primary">下载</button>
-        <button id="newDownloadCancel" class="modal-btn ghost">取消</button>
+        <button id="newDownloadSubmit" class="modal-btn primary" data-i18n="buttonDownload">下载</button>
+        <button id="newDownloadCancel" class="modal-btn ghost" data-i18n="buttonCancel">取消</button>
       </div>
     </div>
   </div>
 
-  <!-- 统计仪表盘模态框 -->
   <div id="statisticsModal" class="modal-overlay hidden">
     <div class="modal-content statistics-modal">
-      <h3 class="modal-title">📊 下载统计</h3>
+      <h3 class="modal-title" data-i18n="statisticsTitle">📊 下载统计</h3>
       <div class="stats-grid">
         <div class="stat-card">
           <span class="stat-value" id="statTotalCount">0</span>
-          <span class="stat-label">总下载数</span>
+          <span class="stat-label" data-i18n="statsTotalCount">总下载数</span>
         </div>
         <div class="stat-card">
           <span class="stat-value" id="statTotalSize">0 B</span>
-          <span class="stat-label">总大小</span>
+          <span class="stat-label" data-i18n="statsTotalSize">总大小</span>
         </div>
         <div class="stat-card">
           <span class="stat-value" id="statCompleteCount">0</span>
-          <span class="stat-label">已完成</span>
+          <span class="stat-label" data-i18n="statsCompleteCount">已完成</span>
         </div>
         <div class="stat-card">
           <span class="stat-value" id="statFailedCount">0</span>
-          <span class="stat-label">失败</span>
+          <span class="stat-label" data-i18n="statsFailedCount">失败</span>
         </div>
       </div>
       <div class="stats-section">
-        <h4 class="stats-section-title">文件类型分布</h4>
+        <h4 class="stats-section-title" data-i18n="statsTypeDistribution">文件类型分布</h4>
         <div id="statsTypeChart" class="stats-chart"></div>
       </div>
       <div class="stats-section">
-        <h4 class="stats-section-title">Top 5 下载来源</h4>
+        <h4 class="stats-section-title" data-i18n="statsTopDomains">Top 5 下载来源</h4>
         <ul id="statsTopDomains" class="stats-list"></ul>
       </div>
-      <button id="statsCloseBtn" class="modal-btn ghost">关闭</button>
+      <button id="statsCloseBtn" class="modal-btn ghost" data-i18n="buttonClose">关闭</button>
     </div>
   </div>
 

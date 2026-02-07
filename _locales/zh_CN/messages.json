@@ -1,0 +1,291 @@
+{
+  "extName": { "message": "下载管理器 Lite" },
+  "extDescription": { "message": "快速管理最近下载任务" },
+  "actionTitle": { "message": "下载管理" },
+  "commandClearCompleted": { "message": "清理已完成记录" },
+  "commandClearFailed": { "message": "清理失败记录" },
+
+  "contextMenuDownloadLink": { "message": "使用下载管理器下载链接" },
+  "contextMenuDownloadImage": { "message": "使用下载管理器下载图片" },
+  "contextMenuDownloadVideo": { "message": "使用下载管理器下载视频" },
+  "contextMenuDownloadAudio": { "message": "使用下载管理器下载音频" },
+
+  "notificationDownloadCompleteTitle": { "message": "下载完成" },
+  "notificationDownloadCompleteMessage": {
+    "message": "$FILENAME$\n大小: $FILESIZE$",
+    "placeholders": {
+      "filename": { "content": "$1" },
+      "filesize": { "content": "$2" }
+    }
+  },
+  "notificationTakeoverTitle": { "message": "下载已接管" },
+  "notificationTakeoverMessage": { "message": "已由扩展接管下载流程，点击打开下载管理页" },
+  "notificationScheduleTitle": { "message": "计划任务已执行" },
+  "notificationScheduleMessage": {
+    "message": "已启动 $COUNT$ 个下载任务",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "popupTitle": { "message": "下载管理" },
+  "searchPlaceholder": { "message": "搜索文件名或域名" },
+  "ariaClearSearch": { "message": "清空搜索" },
+  "buttonNewDownload": { "message": "+ 新建" },
+  "downloadingLabel": { "message": "下载中" },
+  "ariaToggleFilters": { "message": "筛选" },
+  "ariaMoreActions": { "message": "更多" },
+
+  "menuOpenDownloads": { "message": "打开下载页" },
+  "menuOpenOptions": { "message": "设置" },
+  "menuSniffLinks": { "message": "嗅探当前页面链接" },
+  "menuViewStats": { "message": "统计仪表盘" },
+  "menuExportJson": { "message": "导出 JSON" },
+  "menuExportCsv": { "message": "导出 CSV" },
+  "menuClearComplete": { "message": "清理已完成记录" },
+  "menuClearFailed": { "message": "清理失败记录" },
+
+  "filterStatus": { "message": "状态" },
+  "statusAll": { "message": "全部" },
+  "statusDownloading": { "message": "下载中" },
+  "statusComplete": { "message": "已完成" },
+  "statusInterrupted": { "message": "失败" },
+  "statusPaused": { "message": "已暂停" },
+
+  "filterType": { "message": "类型" },
+  "typeAll": { "message": "全部" },
+  "typeDocument": { "message": "文档" },
+  "typeSpreadsheet": { "message": "表格" },
+  "typeImage": { "message": "图片" },
+  "typeArchive": { "message": "压缩包" },
+  "typeInstaller": { "message": "安装包" },
+  "typeOther": { "message": "其他" },
+
+  "emptyNoDownloadsTitle": { "message": "暂无下载记录" },
+  "emptyNoDownloadsDesc": { "message": "去下载点什么吧" },
+  "emptyNoMatchTitle": { "message": "没有匹配结果" },
+  "emptyNoMatchDesc": { "message": "尝试修改关键词" },
+  "buttonResetSearch": { "message": "清空搜索" },
+  "buttonUndo": { "message": "撤销" },
+
+  "removeModalTitle": { "message": "移除下载" },
+  "removeModalDesc": { "message": "您希望如何处理此下载任务？" },
+  "removeModalOnlyRecord": { "message": "仅移除记录" },
+  "removeModalDeleteFile": { "message": "删除文件并移除记录" },
+  "buttonCancel": { "message": "取消" },
+
+  "newDownloadModalTitle": { "message": "新建下载" },
+  "newDownloadModalDesc": { "message": "请输入下载项地址。一行一项，只支持 HTTP/HTTPS。" },
+  "newDownloadPlaceholder": { "message": "https://example.com/file1.zip\\nhttps://example.com/file2.pdf" },
+  "buttonDownload": { "message": "下载" },
+
+  "sniffModalTitle": { "message": "批量链接嗅探" },
+  "sniffModalDesc": { "message": "从当前页面提取可下载链接，勾选后批量加入下载。" },
+  "sniffLoading": { "message": "正在分析当前页面..." },
+  "sniffEmpty": { "message": "当前页面未发现可下载链接" },
+  "sniffSelectAll": { "message": "全选" },
+  "sniffDownloadSelected": { "message": "下载选中项" },
+
+  "statisticsTitle": { "message": "📊 下载统计" },
+  "statsTotalCount": { "message": "总下载数" },
+  "statsTotalSize": { "message": "总大小" },
+  "statsCompleteCount": { "message": "已完成" },
+  "statsFailedCount": { "message": "失败" },
+  "statsTypeDistribution": { "message": "文件类型分布" },
+  "statsTopDomains": { "message": "Top 5 下载来源" },
+  "buttonClose": { "message": "关闭" },
+  "statsNoData": { "message": "暂无数据" },
+
+  "actionOpen": { "message": "打开" },
+  "actionShowInFolder": { "message": "定位" },
+  "actionRetry": { "message": "重试" },
+  "actionCancel": { "message": "取消" },
+  "actionRemove": { "message": "移除" },
+  "actionMore": { "message": "更多操作" },
+  "hintInterrupted": { "message": "下载中断，可尝试重试" },
+
+  "labelDownloadingWithCount": {
+    "message": "下载中 $COUNT$",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "labelDownloadingIdle": { "message": "正在下载" },
+  "labelUnknownFile": { "message": "未知文件" },
+  "labelUnknownSource": { "message": "本地/未知来源" },
+
+  "timeRemainingCalculating": { "message": "计算中..." },
+  "timeRemainingSoon": { "message": "即将完成" },
+  "timeSeconds": {
+    "message": "$COUNT$秒",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "timeMinutes": {
+    "message": "$COUNT$分钟",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "timeHoursApprox": {
+    "message": "约 $COUNT$ 小时",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "downloadDetailsPattern": {
+    "message": "下载中 , $SPEED$ - $DOWNLOADED$ , 共 $TOTAL$ , 剩余 $LEFT$",
+    "placeholders": {
+      "speed": { "content": "$1" },
+      "downloaded": { "content": "$2" },
+      "total": { "content": "$3" },
+      "left": { "content": "$4" }
+    }
+  },
+
+  "tagToday": { "message": "今天" },
+  "tagThisWeek": { "message": "本周" },
+  "tagRecentDays": {
+    "message": "近$DAYS$天",
+    "placeholders": {
+      "days": { "content": "$1" }
+    }
+  },
+  "tagWork": { "message": "办公" },
+  "tagSocial": { "message": "社交" },
+
+  "toastNeedExtension": { "message": "请在扩展环境中打开" },
+  "toastLoadDownloadsFailed": { "message": "加载下载列表失败" },
+  "toastOpenDownloadsFailed": { "message": "打开下载页失败" },
+  "toastOpenOptionsFailed": { "message": "打开设置失败" },
+  "toastOpenFileFailed": { "message": "文件可能已移动或删除" },
+  "toastOpenFolderFailed": { "message": "无法打开所在文件夹" },
+  "toastResumeSuccess": { "message": "已恢复下载" },
+  "toastRestartSuccess": { "message": "已重新开始下载" },
+  "toastRetryMissingUrl": { "message": "无法重试：缺少下载链接" },
+  "toastRetryFailed": { "message": "重试失败" },
+  "toastCancelSuccess": { "message": "已取消下载" },
+  "toastCancelFailed": { "message": "取消失败" },
+  "toastDeleteFileAndRecordSuccess": { "message": "已删除文件和记录" },
+  "toastRemoveRecordSuccess": { "message": "已移除下载记录" },
+  "toastRemoveFailed": { "message": "移除失败" },
+  "toastUndoFailed": { "message": "撤销失败：记录已被删除" },
+  "toastUndoSuccess": { "message": "已恢复记录" },
+  "confirmBulkClear": { "message": "确认批量清理记录？" },
+  "toastBulkClearFailed": { "message": "批量清理失败" },
+  "toastClearCompleteSuccess": { "message": "已完成记录已清理" },
+  "toastClearFailedSuccess": { "message": "失败记录已清理" },
+
+  "toastInputDownloadUrls": { "message": "请输入下载地址" },
+  "toastNoValidHttpUrls": { "message": "没有有效的 HTTP/HTTPS 地址" },
+  "toastAddTasksResult": {
+    "message": "已添加 $SUCCESS$ 个下载任务",
+    "placeholders": {
+      "success": { "content": "$1" }
+    }
+  },
+  "toastAddTasksFailSuffix": {
+    "message": "，$FAIL$ 个失败",
+    "placeholders": {
+      "fail": { "content": "$1" }
+    }
+  },
+  "toastAddTasksInvalidSuffix": {
+    "message": "，$INVALID$ 个地址无效",
+    "placeholders": {
+      "invalid": { "content": "$1" }
+    }
+  },
+
+  "toastNoExportData": { "message": "没有可导出的数据" },
+  "toastExportedCount": {
+    "message": "已导出 $COUNT$ 条记录",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+
+  "csvHeaderId": { "message": "ID" },
+  "csvHeaderFilename": { "message": "文件名" },
+  "csvHeaderUrl": { "message": "URL" },
+  "csvHeaderSize": { "message": "大小(字节)" },
+  "csvHeaderState": { "message": "状态" },
+  "csvHeaderStartTime": { "message": "开始时间" },
+  "csvHeaderEndTime": { "message": "结束时间" },
+  "csvHeaderDomain": { "message": "来源域名" },
+  "csvHeaderType": { "message": "类型" },
+
+  "sniffTypeLink": { "message": "链接" },
+  "sniffTypeImage": { "message": "图片" },
+  "sniffTypeVideo": { "message": "视频" },
+  "sniffTypeAudio": { "message": "音频" },
+  "sniffTypeOther": { "message": "其他" },
+  "sniffUnknownText": { "message": "无标题" },
+  "toastSniffNoActiveTab": { "message": "未找到活动标签页" },
+  "toastSniffNoLinks": { "message": "当前页面未发现可下载链接" },
+  "toastSniffFailed": { "message": "页面嗅探失败" },
+  "toastSniffUnsupportedPage": { "message": "当前页面不支持嗅探（仅支持 http/https）" },
+  "toastSniffPermissionDenied": { "message": "当前页面禁止脚本注入，请在扩展管理中将站点访问权限设为“在所有网站上”" },
+  "toastSniffNoneSelected": { "message": "请至少选择一个链接" },
+  "toastSniffDownloadResult": {
+    "message": "已添加 $SUCCESS$ 个任务",
+    "placeholders": {
+      "success": { "content": "$1" }
+    }
+  },
+  "toastSniffDownloadFailSuffix": {
+    "message": "，$FAIL$ 个失败",
+    "placeholders": {
+      "fail": { "content": "$1" }
+    }
+  },
+
+  "optionsTitle": { "message": "下载管理设置" },
+  "optionsListSize": { "message": "列表显示条数" },
+  "optionsDefaultFilter": { "message": "默认筛选" },
+  "optionsFilterAll": { "message": "全部" },
+  "optionsFilterDownloading": { "message": "仅下载中" },
+  "optionsFilterComplete": { "message": "仅已完成" },
+  "optionsFilterInterrupted": { "message": "仅失败" },
+  "optionsShowSpeed": { "message": "显示已下载大小（下载中）" },
+  "optionsUndoRemove": { "message": "移除记录后显示撤销入口" },
+  "optionsEnableNotifications": { "message": "下载完成时发送系统通知" },
+
+  "optionsSectionSmartTags": { "message": "智能标签" },
+  "optionsEnableSmartTags": { "message": "启用智能标签" },
+  "optionsSmartTagsShowTime": { "message": "显示时间标签" },
+  "optionsSmartTagsTimeWindow": { "message": "时间范围" },
+  "optionsSmartTagsToday": { "message": "仅今天" },
+  "optionsSmartTags7Days": { "message": "7 天内" },
+  "optionsSmartTags30Days": { "message": "30 天内" },
+  "optionsSmartTagsShowDomain": { "message": "显示域名标签" },
+  "optionsSmartTagsWorkDomains": { "message": "办公域名（逗号或换行分隔）" },
+  "optionsSmartTagsSocialDomains": { "message": "社交域名（逗号或换行分隔）" },
+  "optionsSmartTagsHint": { "message": "提示：只需要填写域名，例如 github.com" },
+
+  "optionsSectionSchedule": { "message": "计划任务" },
+  "optionsEnableSchedule": { "message": "启用每日定时下载" },
+  "optionsScheduleTime": { "message": "执行时间" },
+  "optionsScheduleUrls": { "message": "计划下载地址（逗号或换行分隔）" },
+  "optionsScheduleUrlsPlaceholder": { "message": "https://example.com/night-build.zip" },
+  "optionsScheduleHint": { "message": "每天到点后自动按顺序下载这些地址。" },
+
+  "optionsSectionTakeover": { "message": "浏览器接管" },
+  "optionsEnableTakeover": { "message": "接管下载体验（隐藏原生下载条）" },
+  "optionsTakeoverHint": { "message": "开启后优先使用扩展管理下载任务，可随时关闭恢复原生行为。" },
+
+  "optionsSectionShortcuts": { "message": "快捷键" },
+  "optionsShortcutClearCompleted": { "message": "清理已完成记录" },
+  "optionsShortcutClearFailed": { "message": "清理失败记录" },
+  "optionsShortcutFocusSearch": { "message": "聚焦搜索框 (在 Popup 中)" },
+  "optionsShortcutCloseModal": { "message": "关闭菜单/弹窗" },
+  "optionsCustomizeShortcuts": { "message": "自定义快捷键..." },
+
+  "optionsSaveSettings": { "message": "保存设置" },
+  "statusOpenInExtension": { "message": "请在扩展环境中打开设置页" },
+  "statusLoadFailed": { "message": "读取设置失败" },
+  "statusSaved": { "message": "已保存" },
+  "statusSaveFailed": { "message": "保存失败" }
+}

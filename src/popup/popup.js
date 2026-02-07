@@ -5,6 +5,7 @@ const DEFAULT_SETTINGS = {
   defaultStatusFilter: "all",
   showSpeed: false,
   undoRemove: true,
+  enableNotifications: true,
   smartTags: {
     enabled: true,
     showTime: true,
@@ -12,6 +13,14 @@ const DEFAULT_SETTINGS = {
     showDomain: true,
     workDomains: ["github.com", "gitlab.com", "notion.so", "figma.com", "docs.google.com"],
     socialDomains: ["twitter.com", "x.com", "facebook.com", "instagram.com", "weibo.com", "bilibili.com"]
+  },
+  scheduledDownload: {
+    enabled: false,
+    time: "02:00",
+    urls: []
+  },
+  takeover: {
+    enabled: false
   }
 };
 
@@ -88,10 +97,63 @@ const TYPE_COLORS = {
   other: "#64748b"
 };
 
+function t(key, substitutions, fallback = "") {
+  try {
+    if (!chromeApi || !chromeApi.i18n || typeof chromeApi.i18n.getMessage !== "function") {
+      return fallback;
+    }
+    const value = chromeApi.i18n.getMessage(key, substitutions);
+    return value || fallback;
+  } catch (error) {
+    console.error("i18n getMessage failed", error);
+    return fallback;
+  }
+}
+
+function applyI18n() {
+  try {
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+      const key = node.getAttribute("data-i18n");
+      if (!key) {
+        return;
+      }
+      const value = t(key, undefined, node.textContent || "");
+      if (value) {
+        node.textContent = value;
+      }
+    });
+
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+      const key = node.getAttribute("data-i18n-placeholder");
+      if (!key) {
+        return;
+      }
+      const value = t(key, undefined, node.getAttribute("placeholder") || "");
+      if (value) {
+        node.setAttribute("placeholder", value);
+      }
+    });
+
+    document.querySelectorAll("[data-i18n-aria]").forEach((node) => {
+      const key = node.getAttribute("data-i18n-aria");
+      if (!key) {
+        return;
+      }
+      const value = t(key, undefined, node.getAttribute("aria-label") || "");
+      if (value) {
+        node.setAttribute("aria-label", value);
+      }
+    });
+  } catch (error) {
+    console.error("applyI18n failed", error);
+  }
+}
+
 init();
 
 function init() {
   try {
+    applyI18n();
     bindEvents();
     loadSettings().then(() => {
       state.statusFilter = state.settings.defaultStatusFilter || "all";
@@ -257,7 +319,11 @@ async function updateActiveDownloadsUI() {
         const downloadedStr = formatBytes(item.bytesReceived || 0);
         const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
         const timeLeftStr = estimateRemainingTime(item, speed);
-        details.textContent = `下载中 , ${speedStr} - ${downloadedStr} , 共 ${totalStr} , 剩余 ${timeLeftStr}`;
+        details.textContent = t(
+          "downloadDetailsPattern",
+          [speedStr, downloadedStr, totalStr, timeLeftStr],
+          `Downloading, ${speedStr} - ${downloadedStr}, total ${totalStr}, left ${timeLeftStr}`
+        );
       }
     });
 
@@ -266,7 +332,7 @@ async function updateActiveDownloadsUI() {
       loadDownloads(); // 状态变化，完整刷新
     }
   } catch (error) {
-    console.error("更新进度失败", error);
+    console.error("update active download progress failed", error);
   }
 }
 
@@ -282,13 +348,21 @@ function renderSkeleton() {
 function mergeSettings(storedSettings) {
   const settings = storedSettings ? { ...DEFAULT_SETTINGS, ...storedSettings } : { ...DEFAULT_SETTINGS };
   settings.smartTags = { ...DEFAULT_SETTINGS.smartTags, ...(storedSettings && storedSettings.smartTags ? storedSettings.smartTags : {}) };
+  settings.scheduledDownload = {
+    ...DEFAULT_SETTINGS.scheduledDownload,
+    ...(storedSettings && storedSettings.scheduledDownload ? storedSettings.scheduledDownload : {})
+  };
+  settings.takeover = {
+    ...DEFAULT_SETTINGS.takeover,
+    ...(storedSettings && storedSettings.takeover ? storedSettings.takeover : {})
+  };
   return settings;
 }
 
 async function loadSettings() {
   try {
     if (!chromeApi || !chromeApi.storage) {
-      showToast("请在扩展环境中打开", false);
+      showToast(t("toastNeedExtension", undefined, "请在扩展环境中打开"), false);
       return;
     }
     // 优先从 chrome.storage.sync 读取 (Cloud Sync)
@@ -296,19 +370,19 @@ async function loadSettings() {
     try {
       stored = await chromeSyncStorageGet(["settings"]);
     } catch (syncError) {
-      console.warn("同步存储读取失败，回退到本地存储", syncError);
+      console.warn("storage.sync read failed, fallback to local", syncError);
       stored = await chromeStorageGet(["settings"]);
     }
     state.settings = mergeSettings(stored.settings);
   } catch (error) {
-    console.error("读取设置失败", error);
+    console.error("load settings failed", error);
   }
 }
 
 async function loadDownloads() {
   try {
     if (!chromeApi || !chromeApi.downloads) {
-      showToast("请在扩展环境中打开", false);
+      showToast(t("toastNeedExtension", undefined, "请在扩展环境中打开"), false);
       return;
     }
     state.loading = true;
@@ -337,8 +411,8 @@ async function loadDownloads() {
     elements.skeleton.classList.add("hidden");
     applyFilters();
   } catch (error) {
-    console.error("加载下载列表失败", error);
-    showToast("加载下载列表失败", false);
+    console.error("load downloads failed", error);
+    showToast(t("toastLoadDownloadsFailed", undefined, "加载下载列表失败"), false);
     state.loading = false;
     if (state.skeletonTimer) {
       clearTimeout(state.skeletonTimer);
@@ -413,11 +487,11 @@ function renderList(items) {
     elements.emptyState.classList.remove("hidden");
     elements.resetFilters.classList.toggle("hidden", !isSearchEmpty);
     elements.emptyState.querySelector(".empty-title").textContent = isSearchEmpty
-      ? "没有匹配结果"
-      : "暂无下载记录";
+      ? t("emptyNoMatchTitle", undefined, "没有匹配结果")
+      : t("emptyNoDownloadsTitle", undefined, "暂无下载记录");
     elements.emptyState.querySelector(".empty-desc").textContent = isSearchEmpty
-      ? "尝试修改关键词"
-      : "去下载点什么吧";
+      ? t("emptyNoMatchDesc", undefined, "尝试修改关键词")
+      : t("emptyNoDownloadsDesc", undefined, "去下载点什么吧");
     return;
   }
   elements.emptyState.classList.add("hidden");
@@ -496,7 +570,11 @@ function renderList(items) {
       const timeLeftStr = estimateRemainingTime(item, speed);
 
       // 组合字符串
-      details.textContent = `下载中 , ${speedStr} - ${downloadedStr} , 共 ${totalStr} , 剩余 ${timeLeftStr}`;
+      details.textContent = t(
+        "downloadDetailsPattern",
+        [speedStr, downloadedStr, totalStr, timeLeftStr],
+        `Downloading, ${speedStr} - ${downloadedStr}, total ${totalStr}, left ${timeLeftStr}`
+      );
 
       main.appendChild(details);
     }
@@ -504,7 +582,7 @@ function renderList(items) {
     if (item.state === "interrupted") {
       const failed = document.createElement("div");
       failed.className = "file-meta";
-      failed.textContent = "下载中断，可尝试重试";
+      failed.textContent = t("hintInterrupted", undefined, "下载中断，可尝试重试");
       main.appendChild(failed);
     }
 
@@ -515,22 +593,22 @@ function renderList(items) {
     const secondaryActions = [];
 
     if (item.state === "complete") {
-      primaryAction = { label: "打开", variant: "primary", onClick: () => openFile(item) };
-      secondaryActions.push({ label: "定位", onClick: () => showInFolder(item) });
+      primaryAction = { label: t("actionOpen", undefined, "打开"), variant: "primary", onClick: () => openFile(item) };
+      secondaryActions.push({ label: t("actionShowInFolder", undefined, "定位"), onClick: () => showInFolder(item) });
     }
     if (item.state === "interrupted") {
-      primaryAction = { label: "重试", variant: "primary", onClick: () => retryDownload(item) };
+      primaryAction = { label: t("actionRetry", undefined, "重试"), variant: "primary", onClick: () => retryDownload(item) };
     }
     if (isDownloading) {
-      primaryAction = { label: "取消", variant: "danger", onClick: () => cancelDownload(item) };
+      primaryAction = { label: t("actionCancel", undefined, "取消"), variant: "danger", onClick: () => cancelDownload(item) };
     }
 
-    secondaryActions.push({ label: "移除", variant: "danger", onClick: () => removeDownload(item) });
+    secondaryActions.push({ label: t("actionRemove", undefined, "移除"), variant: "danger", onClick: () => removeDownload(item) });
 
     if (primaryAction) {
       actions.append(buildActionButton(primaryAction.label, primaryAction.variant, primaryAction.onClick));
     } else {
-      actions.append(buildActionButton("移除", "", () => removeDownload(item)));
+      actions.append(buildActionButton(t("actionRemove", undefined, "移除"), "", () => removeDownload(item)));
       secondaryActions.length = 0;
     }
 
@@ -547,10 +625,10 @@ function updateDownloadIndicator() {
   const downloadingCount = state.downloads.filter((item) => item.state === "in_progress" || item.state === "downloading").length;
   if (downloadingCount > 0) {
     elements.downloadIndicator.classList.remove("hidden");
-    elements.downloadIndicatorText.innerHTML = `下载中 <span class="count">${downloadingCount}</span>`;
+    elements.downloadIndicatorText.innerHTML = `${escapeHtml(t("downloadingLabel", undefined, "下载中"))} <span class="count">${downloadingCount}</span>`;
   } else {
     elements.downloadIndicator.classList.add("hidden");
-    elements.downloadIndicatorText.textContent = "正在下载";
+    elements.downloadIndicatorText.textContent = t("labelDownloadingIdle", undefined, "正在下载");
   }
 }
 
@@ -575,7 +653,7 @@ function buildActionMenu(actions) {
   const trigger = document.createElement("button");
   trigger.className = "action-menu-trigger";
   trigger.type = "button";
-  trigger.setAttribute("aria-label", "更多操作");
+  trigger.setAttribute("aria-label", t("actionMore", undefined, "更多操作"));
   trigger.textContent = "⋯";
 
   const panel = document.createElement("div");
@@ -647,11 +725,11 @@ function handleMenuAction(action) {
     return;
   }
   if (action === "clear-complete") {
-    clearByState("complete", "已完成记录已清理");
+    clearByState("complete", t("toastClearCompleteSuccess", undefined, "已完成记录已清理"));
     return;
   }
   if (action === "clear-failed") {
-    clearByState("interrupted", "失败记录已清理");
+    clearByState("interrupted", t("toastClearFailedSuccess", undefined, "失败记录已清理"));
   }
 }
 
@@ -667,8 +745,8 @@ async function openDownloadsPage() {
   try {
     await chromeTabsCreate({ url: "chrome://downloads" });
   } catch (error) {
-    console.error("打开下载页失败", error);
-    showToast("打开下载页失败", false);
+    console.error("open downloads page failed", error);
+    showToast(t("toastOpenDownloadsFailed", undefined, "打开下载页失败"), false);
   }
 }
 
@@ -676,8 +754,8 @@ async function openOptionsPage() {
   try {
     await chromeRuntimeOpenOptions();
   } catch (error) {
-    console.error("打开设置失败", error);
-    showToast("打开设置失败", false);
+    console.error("open options page failed", error);
+    showToast(t("toastOpenOptionsFailed", undefined, "打开设置失败"), false);
   }
 }
 
@@ -685,8 +763,8 @@ async function openFile(item) {
   try {
     await chromeDownloadsOpen(item.id);
   } catch (error) {
-    console.error("打开文件失败", error);
-    showToast("文件可能已移动或删除", false);
+    console.error("open file failed", error);
+    showToast(t("toastOpenFileFailed", undefined, "文件可能已移动或删除"), false);
   }
 }
 
@@ -694,8 +772,8 @@ async function showInFolder(item) {
   try {
     await chromeDownloadsShow(item.id);
   } catch (error) {
-    console.error("打开所在文件夹失败", error);
-    showToast("无法打开所在文件夹", false);
+    console.error("show in folder failed", error);
+    showToast(t("toastOpenFolderFailed", undefined, "无法打开所在文件夹"), false);
   }
 }
 
@@ -704,28 +782,28 @@ async function retryDownload(item) {
     // resume() 只能恢复暂停的下载，不能重新开始已取消/中断的下载
     if (item.state === "paused" || item.canResume) {
       await chromeDownloadsResume(item.id);
-      showToast("已恢复下载", false);
+      showToast(t("toastResumeSuccess", undefined, "已恢复下载"), false);
     } else if (item.url) {
       // 对于中断/取消的下载，使用原始 URL 重新下载
       await chromeDownloadsDownload({ url: item.url });
-      showToast("已重新开始下载", false);
+      showToast(t("toastRestartSuccess", undefined, "已重新开始下载"), false);
       loadDownloads(); // 刷新列表显示新下载
     } else {
-      showToast("无法重试：缺少下载链接", false);
+      showToast(t("toastRetryMissingUrl", undefined, "无法重试：缺少下载链接"), false);
     }
   } catch (error) {
-    console.error("重试失败", error);
-    showToast("重试失败", false);
+    console.error("retry download failed", error);
+    showToast(t("toastRetryFailed", undefined, "重试失败"), false);
   }
 }
 
 async function cancelDownload(item) {
   try {
     await chromeDownloadsCancel(item.id);
-    showToast("已取消下载", false);
+    showToast(t("toastCancelSuccess", undefined, "已取消下载"), false);
   } catch (error) {
-    console.error("取消失败", error);
-    showToast("取消失败", false);
+    console.error("cancel download failed", error);
+    showToast(t("toastCancelFailed", undefined, "取消失败"), false);
   }
 }
 
@@ -739,7 +817,7 @@ async function removeDownload(item) {
     if (choice === "delete_file" && item.state === "complete") {
       // 同时删除磁盘文件和记录 - 立即执行，不支持撤销
       await chromeDownloadsRemoveFile(item.id);
-      showToast("已删除文件和记录", false);
+      showToast(t("toastDeleteFileAndRecordSuccess", undefined, "已删除文件和记录"), false);
       loadDownloads();
     } else {
       // 仅移除记录 - 使用延迟删除，支持撤销
@@ -758,14 +836,14 @@ async function removeDownload(item) {
 
       // 显示带撤销按钮的 Toast
       if (state.settings.undoRemove) {
-        showToast("已移除下载记录", true, () => undoRemove(item.id));
+        showToast(t("toastRemoveRecordSuccess", undefined, "已移除下载记录"), true, () => undoRemove(item.id));
       } else {
-        showToast("已移除下载记录", false);
+        showToast(t("toastRemoveRecordSuccess", undefined, "已移除下载记录"), false);
       }
     }
   } catch (error) {
-    console.error("移除失败", error);
-    showToast("移除失败", false);
+    console.error("remove download failed", error);
+    showToast(t("toastRemoveFailed", undefined, "移除失败"), false);
   }
 }
 
@@ -833,7 +911,7 @@ async function executePendingDelete(downloadId) {
 function undoRemove(downloadId) {
   const pending = state.pendingDeletes.get(downloadId);
   if (!pending) {
-    showToast("撤销失败：记录已被删除", false);
+    showToast(t("toastUndoFailed", undefined, "撤销失败：记录已被删除"), false);
     return;
   }
 
@@ -846,11 +924,11 @@ function undoRemove(downloadId) {
   // 刷新列表（恢复显示该记录）
   applyFilters();
 
-  showToast("已恢复记录", false);
+  showToast(t("toastUndoSuccess", undefined, "已恢复记录"), false);
 }
 
 async function clearByState(stateValue, message) {
-  const confirmed = window.confirm("确认批量清理记录？");
+  const confirmed = window.confirm(t("confirmBulkClear", undefined, "确认批量清理记录？"));
   if (!confirmed) {
     return;
   }
@@ -860,8 +938,8 @@ async function clearByState(stateValue, message) {
     showToast(message, false);
     loadDownloads();
   } catch (error) {
-    console.error("批量清理失败", error);
-    showToast("批量清理失败", false);
+    console.error("bulk clear failed", error);
+    showToast(t("toastBulkClearFailed", undefined, "批量清理失败"), false);
   }
 }
 
@@ -911,16 +989,16 @@ function getFileName(item) {
   if (item.filename) {
     // 兼容 Windows 反斜杠和 Unix 正斜杠路径分隔符
     const parts = item.filename.split(/[\\/]/);
-    return parts[parts.length - 1] || "未知文件";
+    return parts[parts.length - 1] || t("labelUnknownFile", undefined, "未知文件");
   }
   const url = item.finalUrl || item.url || "";
   try {
     const parsed = new URL(url);
     const segment = parsed.pathname.split("/").pop();
-    return segment || parsed.hostname || "未知文件";
+    return segment || parsed.hostname || t("labelUnknownFile", undefined, "未知文件");
   } catch (error) {
-    console.error("解析文件名失败", error);
-    return "未知文件";
+    console.error("parse file name failed", error);
+    return t("labelUnknownFile", undefined, "未知文件");
   }
 }
 
@@ -928,13 +1006,13 @@ function getDomain(item) {
   const url = item.finalUrl || item.url || "";
   try {
     if (!url || url.startsWith("file:") || url.startsWith("blob:")) {
-      return "本地/未知来源";
+      return t("labelUnknownSource", undefined, "本地/未知来源");
     }
     const parsed = new URL(url);
-    return parsed.hostname || "本地/未知来源";
+    return parsed.hostname || t("labelUnknownSource", undefined, "本地/未知来源");
   } catch (error) {
-    console.error("解析域名失败", error);
-    return "本地/未知来源";
+    console.error("parse domain failed", error);
+    return t("labelUnknownSource", undefined, "本地/未知来源");
   }
 }
 
@@ -976,7 +1054,7 @@ function formatTime(dateStr) {
     const day = date.getDate();
     return `${month}/${day} ${hours}:${minutes}`;
   } catch (error) {
-    console.error("格式化时间失败", error);
+    console.error("format time failed", error);
     return "--";
   }
 }
@@ -1051,32 +1129,32 @@ function estimateRemainingTime(item, speed) {
     return formatDuration(remainingMs);
   }
 
-  return "计算中...";
+  return t("timeRemainingCalculating", undefined, "计算中...");
 }
 
 /**
  * 格式化时长 (毫秒转可读字符串)
  */
 function formatDuration(ms) {
-  if (ms <= 0) return "即将完成";
+  if (ms <= 0) return t("timeRemainingSoon", undefined, "即将完成");
 
   const seconds = Math.ceil(ms / 1000);
-  if (seconds < 60) return `${seconds}秒`;
+  if (seconds < 60) return t("timeSeconds", [String(seconds)], `${seconds}秒`);
 
   const minutes = Math.ceil(seconds / 60);
-  if (minutes < 60) return `${minutes}分钟`;
+  if (minutes < 60) return t("timeMinutes", [String(minutes)], `${minutes}分钟`);
 
   const hours = Math.ceil(minutes / 60);
-  return `约 ${hours} 小时`;
+  return t("timeHoursApprox", [String(hours)], `约 ${hours} 小时`);
 }
 
 function statusLabel(state) {
   const map = {
-    in_progress: "下载中",
-    downloading: "下载中",
-    interrupted: "已失败",
-    complete: "已完成",
-    paused: "已暂停"
+    in_progress: t("statusDownloading", undefined, "下载中"),
+    downloading: t("statusDownloading", undefined, "下载中"),
+    interrupted: t("statusInterrupted", undefined, "已失败"),
+    complete: t("statusComplete", undefined, "已完成"),
+    paused: t("statusPaused", undefined, "已暂停")
   };
   return map[state] || state;
 }
@@ -1107,6 +1185,7 @@ function debounce(func, wait) {
 function showToast(message, allowUndo, undoCallback) {
   elements.toastMessage.textContent = message;
   elements.toast.classList.remove("hidden");
+  elements.toastAction.textContent = t("buttonUndo", undefined, "撤销");
 
   if (allowUndo && undoCallback) {
     elements.toastAction.classList.remove("hidden");
@@ -1399,13 +1478,13 @@ function hideNewDownloadModal() {
 async function handleNewDownload() {
   const text = elements.newDownloadUrls.value.trim();
   if (!text) {
-    showToast("请输入下载地址", false);
+    showToast(t("toastInputDownloadUrls", undefined, "请输入下载地址"), false);
     return;
   }
 
   const lines = text.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
   if (lines.length === 0) {
-    showToast("请输入下载地址", false);
+    showToast(t("toastInputDownloadUrls", undefined, "请输入下载地址"), false);
     return;
   }
 
@@ -1421,7 +1500,7 @@ async function handleNewDownload() {
   });
 
   if (validUrls.length === 0) {
-    showToast("没有有效的 HTTP/HTTPS 地址", false);
+    showToast(t("toastNoValidHttpUrls", undefined, "没有有效的 HTTP/HTTPS 地址"), false);
     return;
   }
 
@@ -1435,18 +1514,17 @@ async function handleNewDownload() {
       await chromeDownloadsDownload({ url });
       successCount += 1;
     } catch (error) {
-      console.error("下载失败", url, error);
+      console.error("create new download failed", url, error);
       failCount += 1;
     }
   }
 
-  // 显示结果
-  let message = `已添加 ${successCount} 个下载任务`;
+  let message = t("toastAddTasksResult", [String(successCount)], `已添加 ${successCount} 个下载任务`);
   if (failCount > 0) {
-    message += `，${failCount} 个失败`;
+    message += t("toastAddTasksFailSuffix", [String(failCount)], `，${failCount} 个失败`);
   }
   if (invalidUrls.length > 0) {
-    message += `，${invalidUrls.length} 个地址无效`;
+    message += t("toastAddTasksInvalidSuffix", [String(invalidUrls.length)], `，${invalidUrls.length} 个地址无效`);
   }
   showToast(message, false);
   loadDownloads();
@@ -1507,12 +1585,12 @@ function renderStats(stats) {
   elements.statsTypeChart.innerHTML = "";
   const maxTypeCount = Math.max(...Object.values(stats.typeDistribution), 1);
   const typeLabels = {
-    document: "文档",
-    spreadsheet: "表格",
-    image: "图片",
-    archive: "压缩包",
-    installer: "安装包",
-    other: "其他"
+    document: t("typeDocument", undefined, "文档"),
+    spreadsheet: t("typeSpreadsheet", undefined, "表格"),
+    image: t("typeImage", undefined, "图片"),
+    archive: t("typeArchive", undefined, "压缩包"),
+    installer: t("typeInstaller", undefined, "安装包"),
+    other: t("typeOther", undefined, "其他")
   };
 
   Object.entries(stats.typeDistribution)
@@ -1563,7 +1641,7 @@ function renderStats(stats) {
 
   if (topDomains.length === 0) {
     const li = document.createElement("li");
-    li.textContent = "暂无数据";
+    li.textContent = t("statsNoData", undefined, "暂无数据");
     li.style.justifyContent = "center";
     li.style.color = "var(--muted)";
     elements.statsTopDomains.appendChild(li);
@@ -1596,7 +1674,7 @@ function showStatisticsModal() {
 
 function exportData(format) {
   if (state.downloads.length === 0) {
-    showToast("没有可导出的数据", false);
+    showToast(t("toastNoExportData", undefined, "没有可导出的数据"), false);
     return;
   }
 
@@ -1619,7 +1697,17 @@ function exportData(format) {
     content = JSON.stringify(exportItems, null, 2);
     filename = `downloads_${timestamp}.json`;
   } else if (format === "csv") {
-    const headers = ["ID", "文件名", "URL", "大小(字节)", "状态", "开始时间", "结束时间", "来源域名", "类型"];
+    const headers = [
+      t("csvHeaderId", undefined, "ID"),
+      t("csvHeaderFilename", undefined, "文件名"),
+      t("csvHeaderUrl", undefined, "URL"),
+      t("csvHeaderSize", undefined, "大小(字节)"),
+      t("csvHeaderState", undefined, "状态"),
+      t("csvHeaderStartTime", undefined, "开始时间"),
+      t("csvHeaderEndTime", undefined, "结束时间"),
+      t("csvHeaderDomain", undefined, "来源域名"),
+      t("csvHeaderType", undefined, "类型")
+    ];
     const rows = state.downloads.map((item) => [
       item.id,
       `"${getFileName(item).replace(/"/g, '""')}"`,
@@ -1638,7 +1726,7 @@ function exportData(format) {
   }
 
   triggerFileDownload(content, filename, format === "json" ? "application/json" : "text/csv;charset=utf-8");
-  showToast(`已导出 ${state.downloads.length} 条记录`, false);
+  showToast(t("toastExportedCount", [String(state.downloads.length)], `已导出 ${state.downloads.length} 条记录`), false);
 }
 
 function triggerFileDownload(content, filename, mimeType) {
@@ -1724,9 +1812,11 @@ function generateTags(item) {
     const windowDays = Number(config.timeWindowDays) || 7;
 
     if (diffDays === 0 && windowDays >= 1) {
-      tags.push({ label: "今天", class: "today" });
+      tags.push({ label: t("tagToday", undefined, "今天"), class: "today" });
     } else if (diffDays > 0 && diffDays < windowDays) {
-      const label = windowDays <= 7 ? "本周" : `近${windowDays}天`;
+      const label = windowDays <= 7
+        ? t("tagThisWeek", undefined, "本周")
+        : t("tagRecentDays", [String(windowDays)], `近${windowDays}天`);
       tags.push({ label, class: "last-week" });
     }
   }
@@ -1738,10 +1828,10 @@ function generateTags(item) {
     const socialDomains = normalizeDomainList(config.socialDomains);
 
     if (domain && workDomains.some((d) => domain.includes(d))) {
-      tags.push({ label: "办公", class: "work" });
+      tags.push({ label: t("tagWork", undefined, "办公"), class: "work" });
     }
     if (domain && socialDomains.some((d) => domain.includes(d))) {
-      tags.push({ label: "社交", class: "social" });
+      tags.push({ label: t("tagSocial", undefined, "社交"), class: "social" });
     }
   }
 

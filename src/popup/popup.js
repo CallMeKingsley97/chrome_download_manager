@@ -37,7 +37,9 @@ const state = {
   // 用于计算下载速度的快照缓存 {downloadId: {bytes, timestamp}}
   downloadSpeedCache: new Map(),
   // 延迟删除队列 {downloadId: { item, timerId }}
-  pendingDeletes: new Map()
+  pendingDeletes: new Map(),
+  // 统计模态框事件监听器
+  statsModalListeners: null
 };
 
 const elements = {
@@ -472,12 +474,19 @@ function applyFilters() {
   renderList(filtered);
 
   // 根据是否有活跃下载来启动/停止定时刷新
+  updateProgressRefreshState();
+}
+
+function updateProgressRefreshState() {
   const hasActiveDownloads = state.downloads.some((item) => item.state === "in_progress" || item.state === "downloading");
-  if (hasActiveDownloads) {
+  const isTimerRunning = !!state.progressRefreshTimer;
+  
+  if (hasActiveDownloads && !isTimerRunning) {
     startProgressRefresh();
-  } else {
+  } else if (!hasActiveDownloads && isTimerRunning) {
     stopProgressRefresh();
   }
+  // If state hasn't changed, do nothing
 }
 
 function renderList(items) {
@@ -966,6 +975,14 @@ function escapeRegExp(text) {
   return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function escapeCsvField(text) {
+  const str = String(text);
+  // Escape quotes by doubling them, and wrap in quotes if contains special chars
+  const needsQuotes = str.includes('"') || str.includes('\n') || str.includes('\r') || str.includes(',');
+  const escaped = str.replace(/"/g, '""');
+  return needsQuotes ? `"${escaped}"` : escaped;
+}
+
 function detectFileType(item) {
   const name = getFileName(item).toLowerCase();
   const extension = name.includes(".") ? name.split(".").pop() : "";
@@ -1024,17 +1041,13 @@ function getProgressPercent(item) {
 }
 
 function formatBytes(bytes) {
-  if (!bytes) {
-    return "--";
+  if (!bytes || bytes <= 0) {
+    return "0 B";
   }
   const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let index = 0;
-  while (value >= 1024 && index < units.length - 1) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(1)}${units[index]}`;
+  const k = 1024;
+  const index = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, index)).toFixed(1))} ${units[index]}`;
 }
 
 function formatTime(dateStr) {
@@ -1244,10 +1257,34 @@ function chromeDownloadsOpen(id) {
         reject(new Error("下载 API 不可用"));
         return;
       }
-      chromeApi.downloads.open(id);
-      // open method does not have a callback in some versions, but we assume it works or throws async
-      // To be safe wrap in try catch and resolve
-      resolve();
+      
+      // Check if download exists and is complete before trying to open
+      chromeApi.downloads.search({ id: id }, (items) => {
+        if (chromeApi.runtime.lastError) {
+          reject(new Error(chromeApi.runtime.lastError.message));
+          return;
+        }
+        
+        if (!items || items.length === 0) {
+          reject(new Error("下载记录不存在"));
+          return;
+        }
+        
+        const item = items[0];
+        if (item.state !== "complete") {
+          reject(new Error("文件尚未下载完成"));
+          return;
+        }
+        
+        try {
+          chromeApi.downloads.open(id);
+          // Since open() has no callback, we resolve after a short delay
+          // This gives the browser time to throw if there's an immediate error
+          setTimeout(() => resolve(), 100);
+        } catch (error) {
+          reject(error);
+        }
+      });
     } catch (error) {
       console.error("downloads.open 异常", error);
       reject(error);
@@ -1653,11 +1690,13 @@ function showStatisticsModal() {
   renderStats(stats);
   elements.statisticsModal.classList.remove("hidden");
 
+  // Clean up any existing listeners first
+  cleanupStatsModalListeners();
+
   // 绑定关闭事件
   const closeHandler = () => {
     elements.statisticsModal.classList.add("hidden");
-    elements.statsCloseBtn.removeEventListener("click", closeHandler);
-    elements.statisticsModal.removeEventListener("click", overlayClickHandler);
+    cleanupStatsModalListeners();
   };
 
   const overlayClickHandler = (event) => {
@@ -1666,8 +1705,32 @@ function showStatisticsModal() {
     }
   };
 
+  const keydownHandler = (event) => {
+    if (event.key === "Escape") {
+      closeHandler();
+    }
+  };
+
+  // Store references for cleanup
+  state.statsModalListeners = {
+    close: closeHandler,
+    overlay: overlayClickHandler,
+    keydown: keydownHandler
+  };
+
   elements.statsCloseBtn.addEventListener("click", closeHandler);
   elements.statisticsModal.addEventListener("click", overlayClickHandler);
+  document.addEventListener("keydown", keydownHandler);
+}
+
+function cleanupStatsModalListeners() {
+  if (!state.statsModalListeners) return;
+  
+  elements.statsCloseBtn.removeEventListener("click", state.statsModalListeners.close);
+  elements.statisticsModal.removeEventListener("click", state.statsModalListeners.overlay);
+  document.removeEventListener("keydown", state.statsModalListeners.keydown);
+  
+  state.statsModalListeners = null;
 }
 
 // ========== Export Functions ==========
@@ -1710,13 +1773,13 @@ function exportData(format) {
     ];
     const rows = state.downloads.map((item) => [
       item.id,
-      `"${getFileName(item).replace(/"/g, '""')}"`,
-      `"${(item.finalUrl || item.url || "").replace(/"/g, '""')}"`,
+      escapeCsvField(getFileName(item)),
+      escapeCsvField(item.finalUrl || item.url || ""),
       item.fileSize || item.totalBytes || 0,
       item.state,
       item.startTime || "",
       item.endTime || "",
-      getDomain(item),
+      escapeCsvField(getDomain(item)),
       detectFileType(item)
     ]);
     content = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");

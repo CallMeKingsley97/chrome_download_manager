@@ -356,24 +356,22 @@ async function syncScheduledAlarm(settings) {
       return;
     }
 
-    await new Promise((resolve) => {
-      chromeApi.alarms.clear(ALARM_ID, () => resolve());
-    });
-
     const config = normalizeScheduledDownload(settings && settings.scheduledDownload);
-    if (!config.enabled || config.urls.length === 0) {
-      return;
-    }
-
-    const when = computeNextRunTimestamp(config.time);
-    if (!when) {
-      console.error("Invalid schedule time", config.time);
-      return;
-    }
-
-    chromeApi.alarms.create(ALARM_ID, {
-      when,
-      periodInMinutes: 24 * 60
+    
+    // Clear and create in the same callback to minimize race condition window
+    await new Promise((resolve) => {
+      chromeApi.alarms.clear(ALARM_ID, () => {
+        if (config.enabled && config.urls.length > 0) {
+          const when = computeNextRunTimestamp(config.time);
+          if (when) {
+            chromeApi.alarms.create(ALARM_ID, {
+              when,
+              periodInMinutes: 24 * 60
+            });
+          }
+        }
+        resolve();
+      });
     });
   } catch (error) {
     console.error("syncScheduledAlarm failed", error);
@@ -558,6 +556,7 @@ if (chromeApi && chromeApi.alarms && chromeApi.alarms.onAlarm) {
 }
 
 if (chromeApi && chromeApi.storage && chromeApi.storage.onChanged) {
+  let debounceTimer = null;
   chromeApi.storage.onChanged.addListener((changes, areaName) => {
     try {
       if (areaName !== "sync" && areaName !== "local") {
@@ -566,8 +565,14 @@ if (chromeApi && chromeApi.storage && chromeApi.storage.onChanged) {
       if (!changes.settings) {
         return;
       }
-      applyRuntimeSettings();
-      createContextMenus();
+      // Debounce to avoid duplicate processing when both sync and local trigger
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(() => {
+        applyRuntimeSettings();
+        createContextMenus();
+      }, 100);
     } catch (error) {
       console.error("storage.onChanged failed", error);
     }

@@ -423,7 +423,15 @@ async function applyTakeoverMode(settings) {
       console.warn("downloads.setShelfEnabled unavailable on this Chrome version");
       return;
     }
-    chromeApi.downloads.setShelfEnabled(!takeover.enabled);
+    await new Promise((resolve) => {
+      chromeApi.downloads.setShelfEnabled(!takeover.enabled, () => {
+        const error = chromeApi.runtime && chromeApi.runtime.lastError;
+        if (error) {
+          console.warn("downloads.setShelfEnabled failed", error.message);
+        }
+        resolve();
+      });
+    });
   } catch (error) {
     console.error("applyTakeoverMode failed", error);
   }

@@ -144,6 +144,14 @@
       "left": { "content": "$4" }
     }
   },
+  "downloadDetailsCompactPattern": {
+    "message": "$DOWNLOADED$ / $TOTAL$、残り $LEFT$",
+    "placeholders": {
+      "downloaded": { "content": "$1" },
+      "total": { "content": "$2" },
+      "left": { "content": "$3" }
+    }
+  },
 
   "tagToday": { "message": "Today" },
   "tagThisWeek": { "message": "This week" },

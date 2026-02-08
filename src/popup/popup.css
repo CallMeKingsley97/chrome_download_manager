@@ -124,7 +124,7 @@ body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 /* 下载指示器 - 优雅的胶囊设计 */
@@ -185,7 +185,7 @@ body {
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -205,7 +205,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 4px 9px;
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(255, 149, 0, 0.08), rgba(255, 94, 58, 0.08));
   border: 1px solid rgba(255, 149, 0, 0.15);
@@ -249,7 +249,7 @@ body {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .filters {
@@ -358,7 +358,7 @@ body {
   background: var(--card);
   border-radius: 12px;
   border: 1px solid var(--border);
-  padding: 10px;
+  padding: 11px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -558,12 +558,17 @@ body {
   text-overflow: ellipsis;
 }
 
+.download-details-text.compact {
+  color: var(--text);
+  font-weight: 500;
+}
+
 .action-group {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  min-width: 62px;
+  min-width: 72px;
   flex-shrink: 0;
 }
 
@@ -572,13 +577,14 @@ body {
   background: var(--card);
   color: var(--text);
   border-radius: 10px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   font-size: 11px;
   font-weight: 600;
   transition: all 0.3s ease;
   text-align: center;
-  min-width: 62px;
+  min-width: 72px;
+  min-height: 30px;
 }
 
 .action-button:hover:not(:disabled) {
@@ -626,7 +632,7 @@ body {
   background: var(--card);
   color: var(--muted);
   border-radius: 10px;
-  padding: 4px 8px;
+  padding: 6px 8px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 700;
@@ -634,7 +640,8 @@ body {
   transition: all 0.2s ease;
   position: relative;
   z-index: 2;
-  min-width: 62px;
+  min-width: 72px;
+  min-height: 30px;
 }
 
 .action-menu-trigger:hover {
@@ -819,23 +826,54 @@ body {
 }
 
 .skeleton-card {
-  height: 80px;
+  height: 84px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(90deg,
       rgba(0, 0, 0, 0.03),
-      rgba(0, 0, 0, 0.06),
+      rgba(0, 0, 0, 0.08),
       rgba(0, 0, 0, 0.03));
-  border-radius: 16px;
   animation: shimmer 1.5s infinite;
-  background-size: 200% 100%;
+  background-size: 220% 100%;
+}
+
+.skeleton-card::after {
+  content: "";
+  position: absolute;
+  left: 54px;
+  right: 14px;
+  top: 18px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 16px 0 rgba(0, 0, 0, 0.06), 0 32px 0 rgba(0, 0, 0, 0.05);
 }
 
 @media (prefers-color-scheme: dark) {
   .skeleton-card {
+    background: var(--card);
+  }
+
+  .skeleton-card::before {
     background: linear-gradient(90deg,
-        rgba(255, 255, 255, 0.05),
+        rgba(255, 255, 255, 0.04),
         rgba(255, 255, 255, 0.1),
-        rgba(255, 255, 255, 0.05));
-    background-size: 200% 100%;
+        rgba(255, 255, 255, 0.04));
+    background-size: 220% 100%;
+  }
+
+  .skeleton-card::after {
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 0 rgba(255, 255, 255, 0.08), 0 32px 0 rgba(255, 255, 255, 0.06);
   }
 }
 
@@ -1044,7 +1082,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  padding: 4px 9px;
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(52, 199, 89, 0.12), rgba(48, 209, 88, 0.12));
   color: var(--success);
@@ -1110,7 +1148,7 @@ body {
 
 /* Statistics Modal Styles */
 .statistics-modal {
-  width: 360px;
+  width: 356px;
   max-height: 480px;
   overflow-y: auto;
 }
@@ -1125,7 +1163,7 @@ body {
   background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(88, 86, 214, 0.08));
   border: 1px solid rgba(0, 122, 255, 0.15);
   border-radius: 14px;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1154,14 +1192,14 @@ body {
 }
 
 .stats-section {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .stats-section-title {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }

@@ -144,6 +144,14 @@
       "left": { "content": "$4" }
     }
   },
+  "downloadDetailsCompactPattern": {
+    "message": "已下载 $DOWNLOADED$ / $TOTAL$，剩余 $LEFT$",
+    "placeholders": {
+      "downloaded": { "content": "$1" },
+      "total": { "content": "$2" },
+      "left": { "content": "$3" }
+    }
+  },
 
   "tagToday": { "message": "今天" },
   "tagThisWeek": { "message": "本周" },

@@ -21,9 +21,11 @@
           <span class="dot"></span>
           <span id="downloadIndicatorText" data-i18n="downloadingLabel">下载中</span>
         </div>
-        <button id="toggleFilters" class="icon-button" data-i18n="ariaToggleFilters" data-i18n-aria="ariaToggleFilters" aria-label="筛选">筛选</button>
+        <button id="toggleFilters" class="icon-button" data-i18n="ariaToggleFilters" data-i18n-aria="ariaToggleFilters" aria-label="筛选"
+          aria-expanded="false" aria-controls="filters">筛选</button>
         <div class="more-menu">
-          <button id="menuButton" class="icon-button" data-i18n-aria="ariaMoreActions" aria-label="更多">⋯</button>
+          <button id="menuButton" class="icon-button" data-i18n-aria="ariaMoreActions" aria-label="更多" aria-expanded="false"
+            aria-controls="menuPanel">⋯</button>
           <div id="menuPanel" class="menu-panel hidden">
             <button data-action="open-downloads"><span class="menu-icon">⬇️</span><span class="menu-text" data-i18n="menuOpenDownloads">打开下载页</span></button>
             <button data-action="open-options"><span class="menu-icon">⚙️</span><span class="menu-text" data-i18n="menuOpenOptions">设置</span></button>
@@ -44,7 +46,7 @@
         <div class="filter-label" data-i18n="filterStatus">状态</div>
         <div class="chip-group" id="statusFilters">
           <button class="chip" data-value="all" data-i18n="statusAll">全部</button>
-          <button class="chip" data-value="downloading" data-i18n="statusDownloading">下载中</button>
+          <button class="chip" data-value="in_progress" data-i18n="statusDownloading">下载中</button>
           <button class="chip" data-value="complete" data-i18n="statusComplete">已完成</button>
           <button class="chip" data-value="interrupted" data-i18n="statusInterrupted">失败</button>
         </div>

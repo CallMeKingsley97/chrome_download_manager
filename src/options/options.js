@@ -24,6 +24,9 @@ const DEFAULT_SETTINGS = {
   }
 };
 
+const ALLOWED_STATUS_FILTERS = new Set(["all", "in_progress", "complete", "interrupted"]);
+const ALLOWED_LIST_SIZES = new Set([20, 50, 100]);
+
 const elements = {
   form: document.getElementById("settingsForm"),
   listSize: document.getElementById("listSize"),
@@ -46,6 +49,21 @@ const elements = {
 };
 
 init();
+
+function normalizeStatusFilter(value) {
+  if (value === "downloading") {
+    return "in_progress";
+  }
+  return ALLOWED_STATUS_FILTERS.has(value) ? value : "all";
+}
+
+function normalizeListSize(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_SETTINGS.listSize;
+  }
+  return ALLOWED_LIST_SIZES.has(parsed) ? parsed : DEFAULT_SETTINGS.listSize;
+}
 
 function t(key, substitutions, fallback = "") {
   try {
@@ -140,6 +158,8 @@ function updateScheduleControls() {
 
 function mergeSettings(storedSettings) {
   const settings = storedSettings ? { ...DEFAULT_SETTINGS, ...storedSettings } : { ...DEFAULT_SETTINGS };
+  settings.listSize = normalizeListSize(settings.listSize);
+  settings.defaultStatusFilter = normalizeStatusFilter(settings.defaultStatusFilter);
   settings.smartTags = {
     ...DEFAULT_SETTINGS.smartTags,
     ...(storedSettings && storedSettings.smartTags ? storedSettings.smartTags : {})
@@ -153,6 +173,15 @@ function mergeSettings(storedSettings) {
     ...(storedSettings && storedSettings.takeover ? storedSettings.takeover : {})
   };
   return settings;
+}
+
+async function persistSettings(settings) {
+  try {
+    await chromeSyncStorageSet({ settings });
+  } catch (syncError) {
+    console.warn("sync storage save failed, fallback to local", syncError);
+    await chromeStorageSet({ settings });
+  }
 }
 
 function formatDomainList(list) {
@@ -219,6 +248,15 @@ async function loadSettings() {
 
     updateSmartTagControls();
     updateScheduleControls();
+
+    const hasStoredSettings = Boolean(stored && stored.settings);
+    const rawStatusFilter = hasStoredSettings ? stored.settings.defaultStatusFilter : DEFAULT_SETTINGS.defaultStatusFilter;
+    const rawListSize = hasStoredSettings ? stored.settings.listSize : DEFAULT_SETTINGS.listSize;
+    const statusFilterNeedsMigration = normalizeStatusFilter(rawStatusFilter) !== rawStatusFilter;
+    const listSizeNeedsMigration = normalizeListSize(rawListSize) !== Number(rawListSize);
+    if (hasStoredSettings && (statusFilterNeedsMigration || listSizeNeedsMigration)) {
+      await persistSettings(settings);
+    }
   } catch (error) {
     console.error("loadSettings failed", error);
     elements.status.textContent = t("statusLoadFailed", undefined, "读取设置失败");
@@ -229,8 +267,8 @@ async function handleSubmit(event) {
   event.preventDefault();
 
   const settings = {
-    listSize: Number(elements.listSize.value),
-    defaultStatusFilter: elements.defaultStatusFilter.value,
+    listSize: normalizeListSize(elements.listSize.value),
+    defaultStatusFilter: normalizeStatusFilter(elements.defaultStatusFilter.value),
     showSpeed: elements.showSpeed.checked,
     undoRemove: elements.undoRemove.checked,
     enableNotifications: elements.enableNotifications.checked,
@@ -253,12 +291,7 @@ async function handleSubmit(event) {
   };
 
   try {
-    try {
-      await chromeSyncStorageSet({ settings });
-    } catch (syncError) {
-      console.warn("sync storage save failed, fallback to local", syncError);
-      await chromeStorageSet({ settings });
-    }
+    await persistSettings(settings);
 
     elements.status.textContent = t("statusSaved", undefined, "已保存");
     setTimeout(() => {

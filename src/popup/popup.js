@@ -31,6 +31,10 @@ const state = {
   typeFilter: "all",
   settings: { ...DEFAULT_SETTINGS },
   loading: true,
+  loadingInFlight: false,
+  reloadPending: false,
+  hasLoadedOnce: false,
+  lastDownloadsSignature: "",
   refreshTimer: null,
   skeletonTimer: null,
   progressRefreshTimer: null,
@@ -38,6 +42,13 @@ const state = {
   downloadSpeedCache: new Map(),
   // 延迟删除队列 {downloadId: { item, timerId }}
   pendingDeletes: new Map(),
+  // Toast 单例计时器，避免多次触发相互覆盖
+  toastTimer: null,
+  // 当前移除确认弹窗上下文
+  removeDialogContext: null,
+  // 弹窗触发焦点
+  newDownloadTrigger: null,
+  statsModalTrigger: null,
   // 统计模态框事件监听器
   statsModalListeners: null
 };
@@ -99,6 +110,10 @@ const TYPE_COLORS = {
   other: "#64748b"
 };
 
+const ACTIVE_DOWNLOAD_STATES = new Set(["in_progress", "downloading"]);
+const ALLOWED_STATUS_FILTERS = new Set(["all", "in_progress", "complete", "interrupted"]);
+const ALLOWED_LIST_SIZES = new Set([20, 50, 100]);
+
 function t(key, substitutions, fallback = "") {
   try {
     if (!chromeApi || !chromeApi.i18n || typeof chromeApi.i18n.getMessage !== "function") {
@@ -151,14 +166,46 @@ function applyI18n() {
   }
 }
 
+function normalizeStatusFilter(value) {
+  if (value === "downloading") {
+    return "in_progress";
+  }
+  return ALLOWED_STATUS_FILTERS.has(value) ? value : "all";
+}
+
+function normalizeListSize(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return DEFAULT_SETTINGS.listSize;
+  }
+  return ALLOWED_LIST_SIZES.has(parsed) ? parsed : DEFAULT_SETTINGS.listSize;
+}
+
+function isDownloadingState(downloadState) {
+  return ACTIVE_DOWNLOAD_STATES.has(downloadState);
+}
+
+function matchesStatusFilter(item, statusFilter) {
+  if (statusFilter === "all") {
+    return true;
+  }
+  if (statusFilter === "in_progress") {
+    return isDownloadingState(item.state);
+  }
+  return item.state === statusFilter;
+}
+
 init();
 
 function init() {
   try {
     applyI18n();
+    renderSkeleton();
+    elements.toggleFilters.setAttribute("aria-expanded", "false");
+    elements.menuButton.setAttribute("aria-expanded", "false");
     bindEvents();
     loadSettings().then(() => {
-      state.statusFilter = state.settings.defaultStatusFilter || "all";
+      state.statusFilter = normalizeStatusFilter(state.settings.defaultStatusFilter);
       updateFilterUI();
       loadDownloads();
     });
@@ -176,15 +223,16 @@ function bindEvents() {
   });
   elements.clearSearch.addEventListener("click", clearSearch);
   elements.toggleFilters.addEventListener("click", () => {
-    elements.filters.classList.toggle("hidden");
-    elements.toggleFilters.classList.toggle("active");
+    const isHidden = elements.filters.classList.toggle("hidden");
+    elements.toggleFilters.classList.toggle("active", !isHidden);
+    elements.toggleFilters.setAttribute("aria-expanded", String(!isHidden));
   });
   elements.statusFilters.addEventListener("click", (event) => {
     const target = event.target.closest("button");
     if (!target) {
       return;
     }
-    state.statusFilter = target.dataset.value;
+    state.statusFilter = normalizeStatusFilter(target.dataset.value);
     updateFilterUI();
     applyFilters();
   });
@@ -205,8 +253,10 @@ function bindEvents() {
     const isHidden = elements.menuPanel.classList.contains("hidden");
     if (isHidden) {
       elements.menuPanel.classList.remove("hidden");
+      elements.menuButton.setAttribute("aria-expanded", "true");
     } else {
       elements.menuPanel.classList.add("hidden");
+      elements.menuButton.setAttribute("aria-expanded", "false");
     }
   });
   elements.menuPanel.addEventListener("click", (event) => {
@@ -235,14 +285,24 @@ function bindEvents() {
       elements.searchInput.focus();
     }
     if (event.key === "Escape") {
+      if (closeRemoveDialog(null)) {
+        return;
+      }
+      if (!elements.newDownloadModal.classList.contains("hidden")) {
+        hideNewDownloadModal();
+        return;
+      }
+      if (!elements.statisticsModal.classList.contains("hidden")) {
+        hideStatisticsModal();
+        return;
+      }
       closeMenu();
-      hideNewDownloadModal();
       closeActionMenus();
     }
   });
 
   // 新建下载按钮事件
-  elements.newDownloadBtn.addEventListener("click", showNewDownloadModal);
+  elements.newDownloadBtn.addEventListener("click", () => showNewDownloadModal(elements.newDownloadBtn));
   elements.newDownloadSubmit.addEventListener("click", handleNewDownload);
   elements.newDownloadCancel.addEventListener("click", hideNewDownloadModal);
   elements.newDownloadModal.addEventListener("click", (event) => {
@@ -252,7 +312,11 @@ function bindEvents() {
   });
 
   if (chromeApi && chromeApi.downloads && chromeApi.downloads.onChanged) {
-    chromeApi.downloads.onChanged.addListener(scheduleRefresh);
+    chromeApi.downloads.onChanged.addListener((delta) => {
+      if (shouldRefreshOnDownloadDelta(delta)) {
+        scheduleRefresh();
+      }
+    });
   }
 }
 
@@ -261,8 +325,44 @@ function scheduleRefresh() {
     clearTimeout(state.refreshTimer);
   }
   state.refreshTimer = setTimeout(() => {
-    loadDownloads();
+    requestDownloadsReload();
   }, 500);
+}
+
+function shouldRefreshOnDownloadDelta(delta) {
+  if (!delta || typeof delta !== "object") {
+    return false;
+  }
+  const changed = (value) => {
+    if (!value || typeof value !== "object") {
+      return false;
+    }
+    if (Object.prototype.hasOwnProperty.call(value, "previous")) {
+      return value.current !== value.previous;
+    }
+    return true;
+  };
+  return Boolean(
+    changed(delta.state) ||
+    changed(delta.paused) ||
+    changed(delta.error) ||
+    changed(delta.filename) ||
+    changed(delta.finalUrl)
+  );
+}
+
+function requestDownloadsReload() {
+  if (state.loadingInFlight) {
+    state.reloadPending = true;
+    return;
+  }
+  loadDownloads();
+}
+
+function createDownloadsSignature(items) {
+  return items
+    .map((item) => `${item.id}:${item.state}:${item.paused ? 1 : 0}:${item.error || ""}:${item.filename || ""}`)
+    .join("|");
 }
 
 // 定时刷新下载进度 (当有活跃下载时)
@@ -316,22 +416,14 @@ async function updateActiveDownloadsUI() {
       // 更新详情文字
       const details = card.querySelector(".download-details-text");
       if (details) {
-        const speed = calculateDownloadSpeed(item);
-        const speedStr = formatSpeed(speed);
-        const downloadedStr = formatBytes(item.bytesReceived || 0);
-        const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
-        const timeLeftStr = estimateRemainingTime(item, speed);
-        details.textContent = t(
-          "downloadDetailsPattern",
-          [speedStr, downloadedStr, totalStr, timeLeftStr],
-          `Downloading, ${speedStr} - ${downloadedStr}, total ${totalStr}, left ${timeLeftStr}`
-        );
+        details.textContent = formatDownloadDetails(item, Boolean(state.settings.showSpeed));
+        details.classList.toggle("compact", !state.settings.showSpeed);
       }
     });
 
     // 检查是否有下载完成，需要完整刷新
     if (activeItems.length === 0 && state.downloads.some((d) => d.state === "in_progress")) {
-      loadDownloads(); // 状态变化，完整刷新
+      requestDownloadsReload(); // 状态变化，完整刷新
     }
   } catch (error) {
     console.error("update active download progress failed", error);
@@ -349,6 +441,8 @@ function renderSkeleton() {
 
 function mergeSettings(storedSettings) {
   const settings = storedSettings ? { ...DEFAULT_SETTINGS, ...storedSettings } : { ...DEFAULT_SETTINGS };
+  settings.defaultStatusFilter = normalizeStatusFilter(settings.defaultStatusFilter);
+  settings.listSize = normalizeListSize(settings.listSize);
   settings.smartTags = { ...DEFAULT_SETTINGS.smartTags, ...(storedSettings && storedSettings.smartTags ? storedSettings.smartTags : {}) };
   settings.scheduledDownload = {
     ...DEFAULT_SETTINGS.scheduledDownload,
@@ -359,6 +453,25 @@ function mergeSettings(storedSettings) {
     ...(storedSettings && storedSettings.takeover ? storedSettings.takeover : {})
   };
   return settings;
+}
+
+function hasLegacySettings(storedSettings, mergedSettings) {
+  if (!storedSettings) {
+    return false;
+  }
+  if (storedSettings.defaultStatusFilter !== mergedSettings.defaultStatusFilter) {
+    return true;
+  }
+  return normalizeListSize(storedSettings.listSize) !== mergedSettings.listSize;
+}
+
+async function persistSettings(settings) {
+  try {
+    await chromeSyncStorageSet({ settings });
+  } catch (syncError) {
+    console.warn("persist settings to sync failed, fallback to local", syncError);
+    await chromeStorageSet({ settings });
+  }
 }
 
 async function loadSettings() {
@@ -375,52 +488,86 @@ async function loadSettings() {
       console.warn("storage.sync read failed, fallback to local", syncError);
       stored = await chromeStorageGet(["settings"]);
     }
-    state.settings = mergeSettings(stored.settings);
+    const merged = mergeSettings(stored.settings);
+    state.settings = merged;
+
+    if (hasLegacySettings(stored.settings, merged)) {
+      await persistSettings(merged);
+    }
   } catch (error) {
     console.error("load settings failed", error);
   }
 }
 
 async function loadDownloads() {
+  if (state.loadingInFlight) {
+    state.reloadPending = true;
+    return;
+  }
+
+  state.loadingInFlight = true;
   try {
     if (!chromeApi || !chromeApi.downloads) {
       showToast(t("toastNeedExtension", undefined, "请在扩展环境中打开"), false);
       return;
     }
-    state.loading = true;
-    elements.skeleton.classList.add("hidden");
-    elements.emptyState.classList.add("hidden");
-    elements.downloadList.innerHTML = "";
-    if (state.skeletonTimer) {
-      clearTimeout(state.skeletonTimer);
-      state.skeletonTimer = null;
-    }
-    state.skeletonTimer = setTimeout(() => {
-      if (state.loading) {
-        elements.skeleton.classList.remove("hidden");
+    const shouldShowSkeleton = !state.hasLoadedOnce;
+    state.loading = shouldShowSkeleton;
+
+    if (shouldShowSkeleton) {
+      renderSkeleton();
+      elements.skeleton.classList.add("hidden");
+      elements.emptyState.classList.add("hidden");
+      elements.downloadList.innerHTML = "";
+      if (state.skeletonTimer) {
+        clearTimeout(state.skeletonTimer);
+        state.skeletonTimer = null;
       }
-    }, 300);
+      state.skeletonTimer = setTimeout(() => {
+        if (state.loading) {
+          elements.skeleton.classList.remove("hidden");
+        }
+      }, 180);
+    }
 
     const items = await chromeDownloadsSearch({
       orderBy: ["-startTime"]
     });
-    state.downloads = (items || []).slice(0, state.settings.listSize);
+    const limitedItems = (items || []).slice(0, normalizeListSize(state.settings.listSize));
+    const nextSignature = createDownloadsSignature(limitedItems);
+    const shouldRender = !state.hasLoadedOnce || state.lastDownloadsSignature !== nextSignature;
+    state.downloads = limitedItems;
+    state.lastDownloadsSignature = nextSignature;
+    state.hasLoadedOnce = true;
     state.loading = false;
-    if (state.skeletonTimer) {
-      clearTimeout(state.skeletonTimer);
-      state.skeletonTimer = null;
+    if (shouldShowSkeleton) {
+      if (state.skeletonTimer) {
+        clearTimeout(state.skeletonTimer);
+        state.skeletonTimer = null;
+      }
+      elements.skeleton.classList.add("hidden");
     }
-    elements.skeleton.classList.add("hidden");
-    applyFilters();
+    if (shouldRender) {
+      applyFilters();
+    } else {
+      updateProgressRefreshState();
+    }
   } catch (error) {
     console.error("load downloads failed", error);
     showToast(t("toastLoadDownloadsFailed", undefined, "加载下载列表失败"), false);
     state.loading = false;
+    state.hasLoadedOnce = true;
     if (state.skeletonTimer) {
       clearTimeout(state.skeletonTimer);
       state.skeletonTimer = null;
     }
     elements.skeleton.classList.add("hidden");
+  } finally {
+    state.loadingInFlight = false;
+    if (state.reloadPending) {
+      state.reloadPending = false;
+      requestDownloadsReload();
+    }
   }
 }
 
@@ -456,7 +603,7 @@ function applyFilters() {
     if (state.pendingDeletes.has(item.id)) {
       return false;
     }
-    if (state.statusFilter !== "all" && item.state !== state.statusFilter) {
+    if (!matchesStatusFilter(item, state.statusFilter)) {
       return false;
     }
     const type = detectFileType(item);
@@ -478,7 +625,7 @@ function applyFilters() {
 }
 
 function updateProgressRefreshState() {
-  const hasActiveDownloads = state.downloads.some((item) => item.state === "in_progress" || item.state === "downloading");
+  const hasActiveDownloads = state.downloads.some((item) => isDownloadingState(item.state));
   const isTimerRunning = !!state.progressRefreshTimer;
   
   if (hasActiveDownloads && !isTimerRunning) {
@@ -529,7 +676,7 @@ function renderList(items) {
     main.append(title);
 
     // 非下载中状态显示标准元数据
-    const isDownloading = item.state === "in_progress" || item.state === "downloading";
+    const isDownloading = isDownloadingState(item.state);
     if (!isDownloading) {
       const status = document.createElement("span");
       status.className = `status-pill ${statusClass(item.state)}`;
@@ -572,18 +719,8 @@ function renderList(items) {
       const details = document.createElement("div");
       details.className = "download-details-text";
 
-      const speed = calculateDownloadSpeed(item);
-      const speedStr = formatSpeed(speed);
-      const downloadedStr = formatBytes(item.bytesReceived || 0);
-      const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
-      const timeLeftStr = estimateRemainingTime(item, speed);
-
-      // 组合字符串
-      details.textContent = t(
-        "downloadDetailsPattern",
-        [speedStr, downloadedStr, totalStr, timeLeftStr],
-        `Downloading, ${speedStr} - ${downloadedStr}, total ${totalStr}, left ${timeLeftStr}`
-      );
+      details.textContent = formatDownloadDetails(item, Boolean(state.settings.showSpeed));
+      details.classList.toggle("compact", !state.settings.showSpeed);
 
       main.appendChild(details);
     }
@@ -631,7 +768,7 @@ function renderList(items) {
 }
 
 function updateDownloadIndicator() {
-  const downloadingCount = state.downloads.filter((item) => item.state === "in_progress" || item.state === "downloading").length;
+  const downloadingCount = state.downloads.filter((item) => isDownloadingState(item.state)).length;
   if (downloadingCount > 0) {
     elements.downloadIndicator.classList.remove("hidden");
     elements.downloadIndicatorText.innerHTML = `${escapeHtml(t("downloadingLabel", undefined, "下载中"))} <span class="count">${downloadingCount}</span>`;
@@ -663,6 +800,7 @@ function buildActionMenu(actions) {
   trigger.className = "action-menu-trigger";
   trigger.type = "button";
   trigger.setAttribute("aria-label", t("actionMore", undefined, "更多操作"));
+  trigger.setAttribute("aria-expanded", "false");
   trigger.textContent = "⋯";
 
   const panel = document.createElement("div");
@@ -676,6 +814,7 @@ function buildActionMenu(actions) {
     button.addEventListener("click", () => {
       button.disabled = true;
       wrapper.classList.remove("open");
+      trigger.setAttribute("aria-expanded", "false");
       item.onClick().finally(() => {
         button.disabled = false;
       });
@@ -685,8 +824,10 @@ function buildActionMenu(actions) {
 
   trigger.addEventListener("click", (event) => {
     event.stopPropagation();
+    const isOpen = wrapper.classList.contains("open");
     closeActionMenus();
-    wrapper.classList.toggle("open");
+    wrapper.classList.toggle("open", !isOpen);
+    trigger.setAttribute("aria-expanded", String(!isOpen));
   });
 
   wrapper.append(trigger, panel);
@@ -696,6 +837,10 @@ function buildActionMenu(actions) {
 function closeActionMenus() {
   document.querySelectorAll(".action-menu.open").forEach((menu) => {
     menu.classList.remove("open");
+    const trigger = menu.querySelector(".action-menu-trigger");
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+    }
   });
 }
 
@@ -722,7 +867,7 @@ function handleMenuAction(action) {
     return;
   }
   if (action === "view-stats") {
-    showStatisticsModal();
+    showStatisticsModal(document.activeElement);
     return;
   }
   if (action === "export-json") {
@@ -743,11 +888,13 @@ function handleMenuAction(action) {
 }
 
 function toggleMenu() {
-  elements.menuPanel.classList.toggle("hidden");
+  const isNowHidden = elements.menuPanel.classList.toggle("hidden");
+  elements.menuButton.setAttribute("aria-expanded", String(!isNowHidden));
 }
 
 function closeMenu() {
   elements.menuPanel.classList.add("hidden");
+  elements.menuButton.setAttribute("aria-expanded", "false");
 }
 
 async function openDownloadsPage() {
@@ -796,7 +943,7 @@ async function retryDownload(item) {
       // 对于中断/取消的下载，使用原始 URL 重新下载
       await chromeDownloadsDownload({ url: item.url });
       showToast(t("toastRestartSuccess", undefined, "已重新开始下载"), false);
-      loadDownloads(); // 刷新列表显示新下载
+      requestDownloadsReload(); // 刷新列表显示新下载
     } else {
       showToast(t("toastRetryMissingUrl", undefined, "无法重试：缺少下载链接"), false);
     }
@@ -818,7 +965,7 @@ async function cancelDownload(item) {
 
 async function removeDownload(item) {
   // 创建自定义选择对话框，区分仅移除记录和删除磁盘文件
-  const choice = await showRemoveDialog(item);
+  const choice = await showRemoveDialog(item, document.activeElement);
   if (choice === null) {
     return; // 用户取消
   }
@@ -827,7 +974,7 @@ async function removeDownload(item) {
       // 同时删除磁盘文件和记录 - 立即执行，不支持撤销
       await chromeDownloadsRemoveFile(item.id);
       showToast(t("toastDeleteFileAndRecordSuccess", undefined, "已删除文件和记录"), false);
-      loadDownloads();
+      requestDownloadsReload();
     } else {
       // 仅移除记录 - 使用延迟删除，支持撤销
       const UNDO_DELAY_MS = 5000; // 5秒撤销窗口
@@ -856,47 +1003,57 @@ async function removeDownload(item) {
   }
 }
 
-function showRemoveDialog(item) {
+function showRemoveDialog(item, triggerElement) {
   return new Promise((resolve) => {
-    const isComplete = item.state === "complete";
-
-    // 显示模态框
-    elements.removeConfirmModal.classList.remove("hidden");
-
-    if (!isComplete) {
-      elements.modalBtnDeleteFile.style.display = 'none';
-    } else {
-      elements.modalBtnDeleteFile.style.display = 'block';
+    if (state.removeDialogContext) {
+      closeRemoveDialog(null);
     }
 
-    const cleanup = () => {
+    const isComplete = item.state === "complete";
+    const safeTrigger = triggerElement && typeof triggerElement.focus === "function" ? triggerElement : null;
+
+    elements.removeConfirmModal.classList.remove("hidden");
+    elements.modalBtnDeleteFile.style.display = isComplete ? "block" : "none";
+    elements.modalBtnRemoveRecord.focus();
+
+    const cleanup = (result) => {
       elements.removeConfirmModal.classList.add("hidden");
       elements.modalBtnRemoveRecord.removeEventListener("click", handleRemoveRecord);
       elements.modalBtnDeleteFile.removeEventListener("click", handleDeleteFile);
       elements.modalBtnCancel.removeEventListener("click", handleCancel);
-      // 恢复按钮显示状态
-      elements.modalBtnDeleteFile.style.display = '';
+      elements.removeConfirmModal.removeEventListener("click", handleOverlayClick);
+      elements.modalBtnDeleteFile.style.display = "";
+      state.removeDialogContext = null;
+
+      if (safeTrigger) {
+        safeTrigger.focus();
+      }
+      resolve(result);
     };
 
-    const handleRemoveRecord = () => {
-      cleanup();
-      resolve("remove_record");
+    const handleRemoveRecord = () => cleanup("remove_record");
+    const handleDeleteFile = () => cleanup("delete_file");
+    const handleCancel = () => cleanup(null);
+    const handleOverlayClick = (event) => {
+      if (event.target === elements.removeConfirmModal) {
+        handleCancel();
+      }
     };
 
-    const handleDeleteFile = () => {
-      cleanup();
-      resolve("delete_file");
-    };
-
-    const handleCancel = () => {
-      cleanup();
-      resolve(null);
-    };
-
+    state.removeDialogContext = { cleanup };
     elements.modalBtnRemoveRecord.addEventListener("click", handleRemoveRecord);
     elements.modalBtnDeleteFile.addEventListener("click", handleDeleteFile);
     elements.modalBtnCancel.addEventListener("click", handleCancel);
+    elements.removeConfirmModal.addEventListener("click", handleOverlayClick);
   });
+}
+
+function closeRemoveDialog(result = null) {
+  if (!state.removeDialogContext || typeof state.removeDialogContext.cleanup !== "function") {
+    return false;
+  }
+  state.removeDialogContext.cleanup(result);
+  return true;
 }
 
 // 真正执行删除（定时器触发时调用）
@@ -945,7 +1102,7 @@ async function clearByState(stateValue, message) {
     const items = await chromeDownloadsSearch({ state: stateValue });
     await Promise.all(items.map((item) => chromeDownloadsErase({ id: item.id })));
     showToast(message, false);
-    loadDownloads();
+    requestDownloadsReload();
   } catch (error) {
     console.error("bulk clear failed", error);
     showToast(t("toastBulkClearFailed", undefined, "批量清理失败"), false);
@@ -1095,7 +1252,7 @@ function formatSpeed(bytesPerSecond) {
  * @returns {number} 速度(字节/秒),返回0表示无法计算
  */
 function calculateDownloadSpeed(item) {
-  const isDownloading = item && (item.state === 'in_progress' || item.state === 'downloading');
+  const isDownloading = item && isDownloadingState(item.state);
   if (!isDownloading || !item.bytesReceived || item.bytesReceived === 0) {
     return 0;
   }
@@ -1143,6 +1300,28 @@ function estimateRemainingTime(item, speed) {
   }
 
   return t("timeRemainingCalculating", undefined, "计算中...");
+}
+
+function formatDownloadDetails(item, showSpeed) {
+  const speed = calculateDownloadSpeed(item);
+  const speedStr = formatSpeed(speed);
+  const downloadedStr = formatBytes(item.bytesReceived || 0);
+  const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
+  const timeLeftStr = estimateRemainingTime(item, speed);
+
+  if (!showSpeed) {
+    return t(
+      "downloadDetailsCompactPattern",
+      [downloadedStr, totalStr, timeLeftStr],
+      `${downloadedStr} / ${totalStr}, ${timeLeftStr}`
+    );
+  }
+
+  return t(
+    "downloadDetailsPattern",
+    [speedStr, downloadedStr, totalStr, timeLeftStr],
+    `Downloading, ${speedStr} - ${downloadedStr}, total ${totalStr}, left ${timeLeftStr}`
+  );
 }
 
 /**
@@ -1196,6 +1375,10 @@ function debounce(func, wait) {
 }
 
 function showToast(message, allowUndo, undoCallback) {
+  if (state.toastTimer) {
+    clearTimeout(state.toastTimer);
+    state.toastTimer = null;
+  }
   elements.toastMessage.textContent = message;
   elements.toast.classList.remove("hidden");
   elements.toastAction.textContent = t("buttonUndo", undefined, "撤销");
@@ -1208,15 +1391,22 @@ function showToast(message, allowUndo, undoCallback) {
     };
   } else {
     elements.toastAction.classList.add("hidden");
+    elements.toastAction.onclick = null;
   }
 
-  setTimeout(() => {
+  state.toastTimer = setTimeout(() => {
     hideToast();
+    state.toastTimer = null;
   }, 3000);
 }
 
 function hideToast() {
+  if (state.toastTimer) {
+    clearTimeout(state.toastTimer);
+    state.toastTimer = null;
+  }
   elements.toast.classList.add("hidden");
+  elements.toastAction.onclick = null;
 }
 
 // Chrome API Wrappers
@@ -1423,6 +1613,29 @@ function chromeStorageGet(keys) {
   });
 }
 
+function chromeStorageSet(items) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!chromeApi || !chromeApi.storage) {
+        reject(new Error("存储 API 不可用"));
+        return;
+      }
+      chromeApi.storage.local.set(items, () => {
+        const error = chromeApi.runtime.lastError;
+        if (error) {
+          console.error("storage.set 失败", error.message);
+          reject(error);
+          return;
+        }
+        resolve();
+      });
+    } catch (error) {
+      console.error("storage.set 异常", error);
+      reject(error);
+    }
+  });
+}
+
 function chromeTabsCreate(options) {
   return new Promise((resolve, reject) => {
     try {
@@ -1501,15 +1714,23 @@ function chromeDownloadsRemoveFile(id) {
 
 // ========== 新建下载功能 ==========
 
-function showNewDownloadModal() {
+function showNewDownloadModal(triggerElement) {
+  state.newDownloadTrigger = triggerElement && typeof triggerElement.focus === "function"
+    ? triggerElement
+    : document.activeElement;
   elements.newDownloadUrls.value = "";
   elements.newDownloadModal.classList.remove("hidden");
   elements.newDownloadUrls.focus();
 }
 
 function hideNewDownloadModal() {
+  const wasOpen = !elements.newDownloadModal.classList.contains("hidden");
   elements.newDownloadModal.classList.add("hidden");
   elements.newDownloadUrls.value = "";
+  if (wasOpen && state.newDownloadTrigger && typeof state.newDownloadTrigger.focus === "function") {
+    state.newDownloadTrigger.focus();
+  }
+  state.newDownloadTrigger = null;
 }
 
 async function handleNewDownload() {
@@ -1564,7 +1785,7 @@ async function handleNewDownload() {
     message += t("toastAddTasksInvalidSuffix", [String(invalidUrls.length)], `，${invalidUrls.length} 个地址无效`);
   }
   showToast(message, false);
-  loadDownloads();
+  requestDownloadsReload();
 }
 
 function isValidHttpUrl(str) {
@@ -1685,19 +1906,19 @@ function renderStats(stats) {
   }
 }
 
-function showStatisticsModal() {
+function showStatisticsModal(triggerElement) {
   const stats = calculateStats(state.downloads);
   renderStats(stats);
   elements.statisticsModal.classList.remove("hidden");
+  state.statsModalTrigger = triggerElement && typeof triggerElement.focus === "function"
+    ? triggerElement
+    : document.activeElement;
 
   // Clean up any existing listeners first
   cleanupStatsModalListeners();
 
   // 绑定关闭事件
-  const closeHandler = () => {
-    elements.statisticsModal.classList.add("hidden");
-    cleanupStatsModalListeners();
-  };
+  const closeHandler = () => hideStatisticsModal();
 
   const overlayClickHandler = (event) => {
     if (event.target === elements.statisticsModal) {
@@ -1705,22 +1926,25 @@ function showStatisticsModal() {
     }
   };
 
-  const keydownHandler = (event) => {
-    if (event.key === "Escape") {
-      closeHandler();
-    }
-  };
-
   // Store references for cleanup
   state.statsModalListeners = {
     close: closeHandler,
-    overlay: overlayClickHandler,
-    keydown: keydownHandler
+    overlay: overlayClickHandler
   };
 
   elements.statsCloseBtn.addEventListener("click", closeHandler);
   elements.statisticsModal.addEventListener("click", overlayClickHandler);
-  document.addEventListener("keydown", keydownHandler);
+  elements.statsCloseBtn.focus();
+}
+
+function hideStatisticsModal() {
+  const wasOpen = !elements.statisticsModal.classList.contains("hidden");
+  elements.statisticsModal.classList.add("hidden");
+  cleanupStatsModalListeners();
+  if (wasOpen && state.statsModalTrigger && typeof state.statsModalTrigger.focus === "function") {
+    state.statsModalTrigger.focus();
+  }
+  state.statsModalTrigger = null;
 }
 
 function cleanupStatsModalListeners() {
@@ -1728,7 +1952,6 @@ function cleanupStatsModalListeners() {
   
   elements.statsCloseBtn.removeEventListener("click", state.statsModalListeners.close);
   elements.statisticsModal.removeEventListener("click", state.statsModalListeners.overlay);
-  document.removeEventListener("keydown", state.statsModalListeners.keydown);
   
   state.statsModalListeners = null;
 }

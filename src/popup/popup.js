@@ -627,7 +627,7 @@ function applyFilters() {
 function updateProgressRefreshState() {
   const hasActiveDownloads = state.downloads.some((item) => isDownloadingState(item.state));
   const isTimerRunning = !!state.progressRefreshTimer;
-  
+
   if (hasActiveDownloads && !isTimerRunning) {
     startProgressRefresh();
   } else if (!hasActiveDownloads && isTimerRunning) {
@@ -1306,10 +1306,16 @@ function formatDownloadDetails(item, showSpeed) {
   const speed = calculateDownloadSpeed(item);
   const speedStr = formatSpeed(speed);
   const downloadedStr = formatBytes(item.bytesReceived || 0);
-  const totalStr = item.totalBytes ? formatBytes(item.totalBytes) : "--";
-  const timeLeftStr = estimateRemainingTime(item, speed);
+  // Chrome API 中 totalBytes 为 -1 或 0 表示服务器未返回文件总大小
+  const hasTotalSize = item.totalBytes && item.totalBytes > 0;
+  const totalStr = hasTotalSize ? formatBytes(item.totalBytes) : "";
+  const timeLeftStr = hasTotalSize ? estimateRemainingTime(item, speed) : "";
 
   if (!showSpeed) {
+    if (!hasTotalSize) {
+      // 无总大小时，只显示已下载量
+      return `${downloadedStr}`;
+    }
     return t(
       "downloadDetailsCompactPattern",
       [downloadedStr, totalStr, timeLeftStr],
@@ -1317,10 +1323,14 @@ function formatDownloadDetails(item, showSpeed) {
     );
   }
 
+  if (!hasTotalSize) {
+    // 无总大小时，只显示速度和已下载量，省略"共"和"剩余"
+    return `${speedStr} · ${downloadedStr}`;
+  }
   return t(
     "downloadDetailsPattern",
     [speedStr, downloadedStr, totalStr, timeLeftStr],
-    `Downloading, ${speedStr} - ${downloadedStr}, total ${totalStr}, left ${timeLeftStr}`
+    `${speedStr} · ${downloadedStr}, 共 ${totalStr}, 剩余 ${timeLeftStr}`
   );
 }
 
@@ -1447,25 +1457,25 @@ function chromeDownloadsOpen(id) {
         reject(new Error("下载 API 不可用"));
         return;
       }
-      
+
       // Check if download exists and is complete before trying to open
       chromeApi.downloads.search({ id: id }, (items) => {
         if (chromeApi.runtime.lastError) {
           reject(new Error(chromeApi.runtime.lastError.message));
           return;
         }
-        
+
         if (!items || items.length === 0) {
           reject(new Error("下载记录不存在"));
           return;
         }
-        
+
         const item = items[0];
         if (item.state !== "complete") {
           reject(new Error("文件尚未下载完成"));
           return;
         }
-        
+
         try {
           chromeApi.downloads.open(id);
           // Since open() has no callback, we resolve after a short delay
@@ -1949,10 +1959,10 @@ function hideStatisticsModal() {
 
 function cleanupStatsModalListeners() {
   if (!state.statsModalListeners) return;
-  
+
   elements.statsCloseBtn.removeEventListener("click", state.statsModalListeners.close);
   elements.statisticsModal.removeEventListener("click", state.statsModalListeners.overlay);
-  
+
   state.statsModalListeners = null;
 }
 

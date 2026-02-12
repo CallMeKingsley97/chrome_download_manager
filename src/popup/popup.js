@@ -38,7 +38,7 @@ const state = {
   refreshTimer: null,
   skeletonTimer: null,
   progressRefreshTimer: null,
-  // 用于计算下载速度的快照缓存 {downloadId: {bytes, timestamp}}
+  // 用于计算瞬时下载速度的采样缓存 Map<downloadId, { prevBytes, timestamp, speed }>
   downloadSpeedCache: new Map(),
   // 延迟删除队列 {downloadId: { item, timerId }}
   pendingDeletes: new Map(),
@@ -420,6 +420,13 @@ async function updateActiveDownloadsUI() {
         details.classList.toggle("compact", !state.settings.showSpeed);
       }
     });
+
+    // 清理已完成下载的速度采样, 避免内存泄漏
+    for (const [id] of state.downloadSpeedCache) {
+      if (!activeItems.some((a) => a.id === id)) {
+        state.downloadSpeedCache.delete(id);
+      }
+    }
 
     // 检查是否有下载完成，需要完整刷新
     if (activeItems.length === 0 && state.downloads.some((d) => d.state === "in_progress")) {
@@ -1247,29 +1254,52 @@ function formatSpeed(bytesPerSecond) {
 }
 
 /**
- * 计算下载速度 (基于已下载字节和耗时的平均速度)
+ * 计算下载速度 (基于采样间隔的瞬时速度, EMA 平滑)
  * @param {object} item - Download item from Chrome API
  * @returns {number} 速度(字节/秒),返回0表示无法计算
  */
 function calculateDownloadSpeed(item) {
-  const isDownloading = item && isDownloadingState(item.state);
-  if (!isDownloading || !item.bytesReceived || item.bytesReceived === 0) {
+  if (!item || !isDownloadingState(item.state) || !item.bytesReceived) {
     return 0;
   }
 
-  // 方法1: 基于 estimatedEndTime 反推速度
+  const now = Date.now();
+  const id = item.id;
+  const sample = state.downloadSpeedCache.get(id);
+
+  // 方法1: 基于两次采样间隔计算瞬时速度 (每秒轮询触发)
+  if (sample) {
+    const dt = (now - sample.timestamp) / 1000;
+    const db = item.bytesReceived - sample.prevBytes;
+    if (dt >= 0.5 && db >= 0) {
+      const instantSpeed = db / dt;
+      // EMA (指数加权移动平均) 平滑速度波动, alpha=0.7 偏向最新值
+      const smoothed = sample.speed > 0
+        ? sample.speed * 0.3 + instantSpeed * 0.7
+        : instantSpeed;
+      state.downloadSpeedCache.set(id, { prevBytes: item.bytesReceived, timestamp: now, speed: smoothed });
+      if (smoothed > 0) {
+        return smoothed;
+      }
+    }
+  } else {
+    // 首次采样, 仅记录快照, 下次调用时才能计算差值
+    state.downloadSpeedCache.set(id, { prevBytes: item.bytesReceived, timestamp: now, speed: 0 });
+  }
+
+  // 方法2: 基于 estimatedEndTime 反推速度
   if (item.estimatedEndTime && item.totalBytes && item.totalBytes > item.bytesReceived) {
-    const remainingMs = new Date(item.estimatedEndTime).getTime() - Date.now();
+    const remainingMs = new Date(item.estimatedEndTime).getTime() - now;
     if (remainingMs > 0) {
       const remainingBytes = item.totalBytes - item.bytesReceived;
       return remainingBytes / (remainingMs / 1000);
     }
   }
 
-  // 方法2: 基于开始时间和已下载字节计算平均速度
+  // 方法3: 全程平均速度 (降低阈值至 500ms, 加快首次响应)
   if (item.startTime) {
-    const elapsedMs = Date.now() - new Date(item.startTime).getTime();
-    if (elapsedMs > 1000) { // 至少1秒才计算
+    const elapsedMs = now - new Date(item.startTime).getTime();
+    if (elapsedMs > 500) {
       return item.bytesReceived / (elapsedMs / 1000);
     }
   }
@@ -1292,11 +1322,21 @@ function estimateRemainingTime(item, speed) {
     }
   }
 
-  // 备选方案:基于当前速度计算
+  // 基于当前速度计算剩余时间
   if (speed > 0 && item.totalBytes && item.totalBytes > item.bytesReceived) {
     const remainingBytes = item.totalBytes - item.bytesReceived;
     const remainingMs = (remainingBytes / speed) * 1000;
     return formatDuration(remainingMs);
+  }
+
+  // 已下载量 >= 总大小, 文件即将写入完成
+  if (item.totalBytes && item.totalBytes > 0 && item.bytesReceived >= item.totalBytes) {
+    return formatDuration(0);
+  }
+
+  // 有速度但服务器未返回 Content-Length, 无法估算
+  if (speed > 0 && (!item.totalBytes || item.totalBytes <= 0)) {
+    return t("timeRemainingUnknown", undefined, "未知");
   }
 
   return t("timeRemainingCalculating", undefined, "计算中...");

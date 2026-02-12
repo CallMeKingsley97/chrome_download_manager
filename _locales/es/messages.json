@@ -1,299 +1,665 @@
 {
-  "extName": { "message": "Gestor de Descargas Lite" },
-  "extDescription": { "message": "Gestiona rápidamente las descargas recientes" },
-  "actionTitle": { "message": "Gestión de descargas" },
-  "commandClearCompleted": { "message": "Clear completed records" },
-  "commandClearFailed": { "message": "Clear failed records" },
-
-  "contextMenuDownloadLink": { "message": "Download link with Download Manager" },
-  "contextMenuDownloadImage": { "message": "Download image with Download Manager" },
-  "contextMenuDownloadVideo": { "message": "Download video with Download Manager" },
-  "contextMenuDownloadAudio": { "message": "Download audio with Download Manager" },
-
-  "notificationDownloadCompleteTitle": { "message": "Download complete" },
+  "extName": {
+    "message": "Gestor de Descargas Lite"
+  },
+  "extDescription": {
+    "message": "Gestiona rápidamente las descargas recientes"
+  },
+  "actionTitle": {
+    "message": "Gestión de descargas"
+  },
+  "commandClearCompleted": {
+    "message": "Clear completed records"
+  },
+  "commandClearFailed": {
+    "message": "Clear failed records"
+  },
+  "contextMenuDownloadLink": {
+    "message": "Download link with Download Manager"
+  },
+  "contextMenuDownloadImage": {
+    "message": "Download image with Download Manager"
+  },
+  "contextMenuDownloadVideo": {
+    "message": "Download video with Download Manager"
+  },
+  "contextMenuDownloadAudio": {
+    "message": "Download audio with Download Manager"
+  },
+  "notificationDownloadCompleteTitle": {
+    "message": "Download complete"
+  },
   "notificationDownloadCompleteMessage": {
     "message": "$FILENAME$\nSize: $FILESIZE$",
     "placeholders": {
-      "filename": { "content": "$1" },
-      "filesize": { "content": "$2" }
+      "filename": {
+        "content": "$1"
+      },
+      "filesize": {
+        "content": "$2"
+      }
     }
   },
-  "notificationTakeoverTitle": { "message": "Download takeover active" },
-  "notificationTakeoverMessage": { "message": "This download is managed by the extension. Click to open the manager." },
-  "notificationScheduleTitle": { "message": "Scheduled task executed" },
+  "notificationTakeoverTitle": {
+    "message": "Download takeover active"
+  },
+  "notificationTakeoverMessage": {
+    "message": "This download is managed by the extension. Click to open the manager."
+  },
+  "notificationScheduleTitle": {
+    "message": "Scheduled task executed"
+  },
   "notificationScheduleMessage": {
     "message": "$COUNT$ download tasks started",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
-  "popupTitle": { "message": "Gestor de descargas" },
-  "searchPlaceholder": { "message": "Buscar por nombre o dominio" },
-  "ariaClearSearch": { "message": "Clear search" },
-  "buttonNewDownload": { "message": "+ Nuevo" },
-  "downloadingLabel": { "message": "Descargando" },
-  "ariaToggleFilters": { "message": "Filtros" },
-  "ariaMoreActions": { "message": "Más" },
-
-  "menuOpenDownloads": { "message": "Abrir página de descargas" },
-  "menuOpenOptions": { "message": "Configuración" },
-  "menuSniffLinks": { "message": "Detectar enlaces de la página actual" },
-  "menuViewStats": { "message": "Panel de estadísticas" },
-  "menuExportJson": { "message": "Export JSON" },
-  "menuExportCsv": { "message": "Export CSV" },
-  "menuClearComplete": { "message": "Clear completed records" },
-  "menuClearFailed": { "message": "Clear failed records" },
-
-  "filterStatus": { "message": "Estado" },
-  "statusAll": { "message": "Todos" },
-  "statusDownloading": { "message": "Descargando" },
-  "statusComplete": { "message": "Completado" },
-  "statusInterrupted": { "message": "Fallido" },
-  "statusPaused": { "message": "Paused" },
-
-  "filterType": { "message": "Tipo" },
-  "typeAll": { "message": "Todos" },
-  "typeDocument": { "message": "Documento" },
-  "typeSpreadsheet": { "message": "Hoja de cálculo" },
-  "typeImage": { "message": "Imagen" },
-  "typeArchive": { "message": "Archivo comprimido" },
-  "typeInstaller": { "message": "Instalador" },
-  "typeOther": { "message": "Otro" },
-
-  "emptyNoDownloadsTitle": { "message": "No download records yet" },
-  "emptyNoDownloadsDesc": { "message": "Start a download to see it here" },
-  "emptyNoMatchTitle": { "message": "No results" },
-  "emptyNoMatchDesc": { "message": "Try another keyword" },
-  "buttonResetSearch": { "message": "Clear search" },
-  "buttonUndo": { "message": "Undo" },
-
-  "removeModalTitle": { "message": "Remove download" },
-  "removeModalDesc": { "message": "How do you want to handle this task?" },
-  "removeModalOnlyRecord": { "message": "Remove record only" },
-  "removeModalDeleteFile": { "message": "Delete file and remove record" },
-  "buttonCancel": { "message": "Cancel" },
-
-  "newDownloadModalTitle": { "message": "New download" },
-  "newDownloadModalDesc": { "message": "Enter one URL per line. Only HTTP/HTTPS is supported." },
-  "newDownloadPlaceholder": { "message": "https://example.com/file1.zip\\nhttps://example.com/file2.pdf" },
-  "buttonDownload": { "message": "Download" },
-
-  "sniffModalTitle": { "message": "Batch link sniffing" },
-  "sniffModalDesc": { "message": "Extract downloadable links from the current page and add selected ones in batch." },
-  "sniffLoading": { "message": "Analyzing current page..." },
-  "sniffEmpty": { "message": "No downloadable links found on this page" },
-  "sniffSelectAll": { "message": "Select all" },
-  "sniffDownloadSelected": { "message": "Download selected" },
-
-  "statisticsTitle": { "message": "📊 Estadísticas de descarga" },
-  "statsTotalCount": { "message": "Total downloads" },
-  "statsTotalSize": { "message": "Total size" },
-  "statsCompleteCount": { "message": "Completed" },
-  "statsFailedCount": { "message": "Failed" },
-  "statsTypeDistribution": { "message": "File type distribution" },
-  "statsTopDomains": { "message": "Top 5 sources" },
-  "buttonClose": { "message": "Cerrar" },
-  "statsNoData": { "message": "No data" },
-
-  "actionOpen": { "message": "Open" },
-  "actionShowInFolder": { "message": "Show" },
-  "actionRetry": { "message": "Retry" },
-  "actionCancel": { "message": "Cancel" },
-  "actionRemove": { "message": "Remove" },
-  "actionMore": { "message": "More actions" },
-  "hintInterrupted": { "message": "Download interrupted, try retrying" },
-
+  "popupTitle": {
+    "message": "Gestor de descargas"
+  },
+  "searchPlaceholder": {
+    "message": "Buscar por nombre o dominio"
+  },
+  "ariaClearSearch": {
+    "message": "Clear search"
+  },
+  "buttonNewDownload": {
+    "message": "+ Nuevo"
+  },
+  "downloadingLabel": {
+    "message": "Descargando"
+  },
+  "ariaToggleFilters": {
+    "message": "Filtros"
+  },
+  "ariaMoreActions": {
+    "message": "Más"
+  },
+  "menuOpenDownloads": {
+    "message": "Abrir página de descargas"
+  },
+  "menuOpenOptions": {
+    "message": "Configuración"
+  },
+  "menuSniffLinks": {
+    "message": "Detectar enlaces de la página actual"
+  },
+  "menuViewStats": {
+    "message": "Panel de estadísticas"
+  },
+  "menuExportJson": {
+    "message": "Export JSON"
+  },
+  "menuExportCsv": {
+    "message": "Export CSV"
+  },
+  "menuClearComplete": {
+    "message": "Clear completed records"
+  },
+  "menuClearFailed": {
+    "message": "Clear failed records"
+  },
+  "filterStatus": {
+    "message": "Estado"
+  },
+  "statusAll": {
+    "message": "Todos"
+  },
+  "statusDownloading": {
+    "message": "Descargando"
+  },
+  "statusComplete": {
+    "message": "Completado"
+  },
+  "statusInterrupted": {
+    "message": "Fallido"
+  },
+  "statusPaused": {
+    "message": "Paused"
+  },
+  "filterType": {
+    "message": "Tipo"
+  },
+  "typeAll": {
+    "message": "Todos"
+  },
+  "typeDocument": {
+    "message": "Documento"
+  },
+  "typeSpreadsheet": {
+    "message": "Hoja de cálculo"
+  },
+  "typeImage": {
+    "message": "Imagen"
+  },
+  "typeArchive": {
+    "message": "Archivo comprimido"
+  },
+  "typeInstaller": {
+    "message": "Instalador"
+  },
+  "typeOther": {
+    "message": "Otro"
+  },
+  "emptyNoDownloadsTitle": {
+    "message": "No download records yet"
+  },
+  "emptyNoDownloadsDesc": {
+    "message": "Start a download to see it here"
+  },
+  "emptyNoMatchTitle": {
+    "message": "No results"
+  },
+  "emptyNoMatchDesc": {
+    "message": "Try another keyword"
+  },
+  "buttonResetSearch": {
+    "message": "Clear search"
+  },
+  "buttonUndo": {
+    "message": "Undo"
+  },
+  "removeModalTitle": {
+    "message": "Remove download"
+  },
+  "removeModalDesc": {
+    "message": "How do you want to handle this task?"
+  },
+  "removeModalOnlyRecord": {
+    "message": "Remove record only"
+  },
+  "removeModalDeleteFile": {
+    "message": "Delete file and remove record"
+  },
+  "buttonCancel": {
+    "message": "Cancel"
+  },
+  "newDownloadModalTitle": {
+    "message": "New download"
+  },
+  "newDownloadModalDesc": {
+    "message": "Enter one URL per line. Only HTTP/HTTPS is supported."
+  },
+  "newDownloadPlaceholder": {
+    "message": "https://example.com/file1.zip\\nhttps://example.com/file2.pdf"
+  },
+  "buttonDownload": {
+    "message": "Download"
+  },
+  "sniffModalTitle": {
+    "message": "Batch link sniffing"
+  },
+  "sniffModalDesc": {
+    "message": "Extract downloadable links from the current page and add selected ones in batch."
+  },
+  "sniffLoading": {
+    "message": "Analyzing current page..."
+  },
+  "sniffEmpty": {
+    "message": "No downloadable links found on this page"
+  },
+  "sniffSelectAll": {
+    "message": "Select all"
+  },
+  "sniffDownloadSelected": {
+    "message": "Download selected"
+  },
+  "statisticsTitle": {
+    "message": "📊 Estadísticas de descarga"
+  },
+  "statsTotalCount": {
+    "message": "Total downloads"
+  },
+  "statsTotalSize": {
+    "message": "Total size"
+  },
+  "statsCompleteCount": {
+    "message": "Completed"
+  },
+  "statsFailedCount": {
+    "message": "Failed"
+  },
+  "statsTypeDistribution": {
+    "message": "File type distribution"
+  },
+  "statsTopDomains": {
+    "message": "Top 5 sources"
+  },
+  "buttonClose": {
+    "message": "Cerrar"
+  },
+  "statsNoData": {
+    "message": "No data"
+  },
+  "actionOpen": {
+    "message": "Open"
+  },
+  "actionShowInFolder": {
+    "message": "Show"
+  },
+  "actionRetry": {
+    "message": "Retry"
+  },
+  "actionCancel": {
+    "message": "Cancel"
+  },
+  "actionRemove": {
+    "message": "Remove"
+  },
+  "actionMore": {
+    "message": "More actions"
+  },
+  "hintInterrupted": {
+    "message": "Download interrupted, try retrying"
+  },
   "labelDownloadingWithCount": {
     "message": "Downloading $COUNT$",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-  "labelDownloadingIdle": { "message": "Downloading" },
-  "labelUnknownFile": { "message": "Unknown file" },
-  "labelUnknownSource": { "message": "Local/Unknown source" },
-
-  "timeRemainingCalculating": { "message": "Calculating..." },
-  "timeRemainingSoon": { "message": "Almost done" },
+  "labelDownloadingIdle": {
+    "message": "Downloading"
+  },
+  "labelUnknownFile": {
+    "message": "Unknown file"
+  },
+  "labelUnknownSource": {
+    "message": "Local/Unknown source"
+  },
+  "timeRemainingCalculating": {
+    "message": "Calculating..."
+  },
+  "timeRemainingUnknown": {
+    "message": "Desconocido"
+  },
+  "timeRemainingSoon": {
+    "message": "Almost done"
+  },
   "timeSeconds": {
     "message": "$COUNT$s",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "timeMinutes": {
     "message": "$COUNT$m",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
   "timeHoursApprox": {
     "message": "~$COUNT$h",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
   "downloadDetailsPattern": {
     "message": "Downloading, $SPEED$ - $DOWNLOADED$, total $TOTAL$, left $LEFT$",
     "placeholders": {
-      "speed": { "content": "$1" },
-      "downloaded": { "content": "$2" },
-      "total": { "content": "$3" },
-      "left": { "content": "$4" }
+      "speed": {
+        "content": "$1"
+      },
+      "downloaded": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      },
+      "left": {
+        "content": "$4"
+      }
     }
   },
   "downloadDetailsCompactPattern": {
     "message": "$DOWNLOADED$ / $TOTAL$, queda $LEFT$",
     "placeholders": {
-      "downloaded": { "content": "$1" },
-      "total": { "content": "$2" },
-      "left": { "content": "$3" }
+      "downloaded": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "left": {
+        "content": "$3"
+      }
     }
   },
-
-  "tagToday": { "message": "Today" },
-  "tagThisWeek": { "message": "This week" },
+  "tagToday": {
+    "message": "Today"
+  },
+  "tagThisWeek": {
+    "message": "This week"
+  },
   "tagRecentDays": {
     "message": "Last $DAYS$ days",
     "placeholders": {
-      "days": { "content": "$1" }
+      "days": {
+        "content": "$1"
+      }
     }
   },
-  "tagWork": { "message": "Work" },
-  "tagSocial": { "message": "Social" },
-
-  "toastNeedExtension": { "message": "Please open in extension environment" },
-  "toastLoadDownloadsFailed": { "message": "Failed to load downloads" },
-  "toastOpenDownloadsFailed": { "message": "Failed to open downloads page" },
-  "toastOpenOptionsFailed": { "message": "Failed to open settings" },
-  "toastOpenFileFailed": { "message": "File may have been moved or deleted" },
-  "toastOpenFolderFailed": { "message": "Failed to open containing folder" },
-  "toastResumeSuccess": { "message": "Download resumed" },
-  "toastRestartSuccess": { "message": "Download restarted" },
-  "toastRetryMissingUrl": { "message": "Cannot retry: missing URL" },
-  "toastRetryFailed": { "message": "Retry failed" },
-  "toastCancelSuccess": { "message": "Download canceled" },
-  "toastCancelFailed": { "message": "Cancel failed" },
-  "toastDeleteFileAndRecordSuccess": { "message": "File and record deleted" },
-  "toastRemoveRecordSuccess": { "message": "Record removed" },
-  "toastRemoveFailed": { "message": "Remove failed" },
-  "toastUndoFailed": { "message": "Undo failed: record already deleted" },
-  "toastUndoSuccess": { "message": "Record restored" },
-  "confirmBulkClear": { "message": "Confirm bulk clear?" },
-  "toastBulkClearFailed": { "message": "Bulk clear failed" },
-  "toastClearCompleteSuccess": { "message": "Completed records cleared" },
-  "toastClearFailedSuccess": { "message": "Failed records cleared" },
-
-  "toastInputDownloadUrls": { "message": "Please enter download URLs" },
-  "toastNoValidHttpUrls": { "message": "No valid HTTP/HTTPS URLs" },
+  "tagWork": {
+    "message": "Work"
+  },
+  "tagSocial": {
+    "message": "Social"
+  },
+  "toastNeedExtension": {
+    "message": "Please open in extension environment"
+  },
+  "toastLoadDownloadsFailed": {
+    "message": "Failed to load downloads"
+  },
+  "toastOpenDownloadsFailed": {
+    "message": "Failed to open downloads page"
+  },
+  "toastOpenOptionsFailed": {
+    "message": "Failed to open settings"
+  },
+  "toastOpenFileFailed": {
+    "message": "File may have been moved or deleted"
+  },
+  "toastOpenFolderFailed": {
+    "message": "Failed to open containing folder"
+  },
+  "toastResumeSuccess": {
+    "message": "Download resumed"
+  },
+  "toastRestartSuccess": {
+    "message": "Download restarted"
+  },
+  "toastRetryMissingUrl": {
+    "message": "Cannot retry: missing URL"
+  },
+  "toastRetryFailed": {
+    "message": "Retry failed"
+  },
+  "toastCancelSuccess": {
+    "message": "Download canceled"
+  },
+  "toastCancelFailed": {
+    "message": "Cancel failed"
+  },
+  "toastDeleteFileAndRecordSuccess": {
+    "message": "File and record deleted"
+  },
+  "toastRemoveRecordSuccess": {
+    "message": "Record removed"
+  },
+  "toastRemoveFailed": {
+    "message": "Remove failed"
+  },
+  "toastUndoFailed": {
+    "message": "Undo failed: record already deleted"
+  },
+  "toastUndoSuccess": {
+    "message": "Record restored"
+  },
+  "confirmBulkClear": {
+    "message": "Confirm bulk clear?"
+  },
+  "toastBulkClearFailed": {
+    "message": "Bulk clear failed"
+  },
+  "toastClearCompleteSuccess": {
+    "message": "Completed records cleared"
+  },
+  "toastClearFailedSuccess": {
+    "message": "Failed records cleared"
+  },
+  "toastInputDownloadUrls": {
+    "message": "Please enter download URLs"
+  },
+  "toastNoValidHttpUrls": {
+    "message": "No valid HTTP/HTTPS URLs"
+  },
   "toastAddTasksResult": {
     "message": "$SUCCESS$ tasks added",
     "placeholders": {
-      "success": { "content": "$1" }
+      "success": {
+        "content": "$1"
+      }
     }
   },
   "toastAddTasksFailSuffix": {
     "message": ", $FAIL$ failed",
     "placeholders": {
-      "fail": { "content": "$1" }
+      "fail": {
+        "content": "$1"
+      }
     }
   },
   "toastAddTasksInvalidSuffix": {
     "message": ", $INVALID$ invalid URLs",
     "placeholders": {
-      "invalid": { "content": "$1" }
+      "invalid": {
+        "content": "$1"
+      }
     }
   },
-
-  "toastNoExportData": { "message": "No data to export" },
+  "toastNoExportData": {
+    "message": "No data to export"
+  },
   "toastExportedCount": {
     "message": "$COUNT$ records exported",
     "placeholders": {
-      "count": { "content": "$1" }
+      "count": {
+        "content": "$1"
+      }
     }
   },
-
-  "csvHeaderId": { "message": "ID" },
-  "csvHeaderFilename": { "message": "Filename" },
-  "csvHeaderUrl": { "message": "URL" },
-  "csvHeaderSize": { "message": "Size(bytes)" },
-  "csvHeaderState": { "message": "State" },
-  "csvHeaderStartTime": { "message": "Start time" },
-  "csvHeaderEndTime": { "message": "End time" },
-  "csvHeaderDomain": { "message": "Domain" },
-  "csvHeaderType": { "message": "Type" },
-
-  "sniffTypeLink": { "message": "Link" },
-  "sniffTypeImage": { "message": "Image" },
-  "sniffTypeVideo": { "message": "Video" },
-  "sniffTypeAudio": { "message": "Audio" },
-  "sniffTypeOther": { "message": "Other" },
-  "sniffUnknownText": { "message": "Untitled" },
-  "toastSniffNoActiveTab": { "message": "No active tab found" },
-  "toastSniffNoLinks": { "message": "No downloadable links found" },
-  "toastSniffFailed": { "message": "Link sniffing failed" },
-  "toastSniffUnsupportedPage": { "message": "Esta página no admite detección (solo HTTP/HTTPS)" },
-  "toastSniffPermissionDenied": { "message": "La inyección de scripts está bloqueada en esta página. En la configuración de la extensión, cambia el acceso del sitio a 'En todos los sitios'." },
-  "toastSniffNoneSelected": { "message": "Select at least one link" },
+  "csvHeaderId": {
+    "message": "ID"
+  },
+  "csvHeaderFilename": {
+    "message": "Filename"
+  },
+  "csvHeaderUrl": {
+    "message": "URL"
+  },
+  "csvHeaderSize": {
+    "message": "Size(bytes)"
+  },
+  "csvHeaderState": {
+    "message": "State"
+  },
+  "csvHeaderStartTime": {
+    "message": "Start time"
+  },
+  "csvHeaderEndTime": {
+    "message": "End time"
+  },
+  "csvHeaderDomain": {
+    "message": "Domain"
+  },
+  "csvHeaderType": {
+    "message": "Type"
+  },
+  "sniffTypeLink": {
+    "message": "Link"
+  },
+  "sniffTypeImage": {
+    "message": "Image"
+  },
+  "sniffTypeVideo": {
+    "message": "Video"
+  },
+  "sniffTypeAudio": {
+    "message": "Audio"
+  },
+  "sniffTypeOther": {
+    "message": "Other"
+  },
+  "sniffUnknownText": {
+    "message": "Untitled"
+  },
+  "toastSniffNoActiveTab": {
+    "message": "No active tab found"
+  },
+  "toastSniffNoLinks": {
+    "message": "No downloadable links found"
+  },
+  "toastSniffFailed": {
+    "message": "Link sniffing failed"
+  },
+  "toastSniffUnsupportedPage": {
+    "message": "Esta página no admite detección (solo HTTP/HTTPS)"
+  },
+  "toastSniffPermissionDenied": {
+    "message": "La inyección de scripts está bloqueada en esta página. En la configuración de la extensión, cambia el acceso del sitio a 'En todos los sitios'."
+  },
+  "toastSniffNoneSelected": {
+    "message": "Select at least one link"
+  },
   "toastSniffDownloadResult": {
     "message": "$SUCCESS$ tasks added",
     "placeholders": {
-      "success": { "content": "$1" }
+      "success": {
+        "content": "$1"
+      }
     }
   },
   "toastSniffDownloadFailSuffix": {
     "message": ", $FAIL$ failed",
     "placeholders": {
-      "fail": { "content": "$1" }
+      "fail": {
+        "content": "$1"
+      }
     }
   },
-
-  "optionsTitle": { "message": "Configuración del gestor de descargas" },
-  "optionsListSize": { "message": "Visible items" },
-  "optionsDefaultFilter": { "message": "Default filter" },
-  "optionsFilterAll": { "message": "All" },
-  "optionsFilterDownloading": { "message": "Downloading only" },
-  "optionsFilterComplete": { "message": "Completed only" },
-  "optionsFilterInterrupted": { "message": "Failed only" },
-  "optionsShowSpeed": { "message": "Show downloaded size while downloading" },
-  "optionsUndoRemove": { "message": "Show undo after removing records" },
-  "optionsEnableNotifications": { "message": "Send system notification when completed" },
-
-  "optionsSectionSmartTags": { "message": "Smart Tags" },
-  "optionsEnableSmartTags": { "message": "Enable smart tags" },
-  "optionsSmartTagsShowTime": { "message": "Show time tags" },
-  "optionsSmartTagsTimeWindow": { "message": "Time range" },
-  "optionsSmartTagsToday": { "message": "Today only" },
-  "optionsSmartTags7Days": { "message": "Within 7 days" },
-  "optionsSmartTags30Days": { "message": "Within 30 days" },
-  "optionsSmartTagsShowDomain": { "message": "Show domain tags" },
-  "optionsSmartTagsWorkDomains": { "message": "Work domains (comma/newline separated)" },
-  "optionsSmartTagsSocialDomains": { "message": "Social domains (comma/newline separated)" },
-  "optionsSmartTagsHint": { "message": "Hint: provide domain only, e.g. github.com" },
-
-  "optionsSectionSchedule": { "message": "Tareas programadas" },
-  "optionsEnableSchedule": { "message": "Enable daily scheduled download" },
-  "optionsScheduleTime": { "message": "Run time" },
-  "optionsScheduleUrls": { "message": "Scheduled URLs (comma/newline separated)" },
-  "optionsScheduleUrlsPlaceholder": { "message": "https://example.com/night-build.zip" },
-  "optionsScheduleHint": { "message": "Downloads run every day at the configured time." },
-
-  "optionsSectionTakeover": { "message": "Control del navegador" },
-  "optionsEnableTakeover": { "message": "Take over download experience (hide native shelf)" },
-  "optionsTakeoverHint": { "message": "When enabled, extension UI is preferred and native behavior can be restored anytime." },
-
-  "optionsSectionShortcuts": { "message": "Shortcuts" },
-  "optionsShortcutClearCompleted": { "message": "Clear completed records" },
-  "optionsShortcutClearFailed": { "message": "Clear failed records" },
-  "optionsShortcutFocusSearch": { "message": "Focus search (in popup)" },
-  "optionsShortcutCloseModal": { "message": "Close menu/modal" },
-  "optionsCustomizeShortcuts": { "message": "Customize shortcuts..." },
-
-  "optionsSaveSettings": { "message": "Guardar configuración" },
-  "statusOpenInExtension": { "message": "Please open settings in extension environment" },
-  "statusLoadFailed": { "message": "Failed to load settings" },
-  "statusSaved": { "message": "Saved" },
-  "statusSaveFailed": { "message": "Save failed" }
+  "optionsTitle": {
+    "message": "Configuración del gestor de descargas"
+  },
+  "optionsListSize": {
+    "message": "Visible items"
+  },
+  "optionsDefaultFilter": {
+    "message": "Default filter"
+  },
+  "optionsFilterAll": {
+    "message": "All"
+  },
+  "optionsFilterDownloading": {
+    "message": "Downloading only"
+  },
+  "optionsFilterComplete": {
+    "message": "Completed only"
+  },
+  "optionsFilterInterrupted": {
+    "message": "Failed only"
+  },
+  "optionsShowSpeed": {
+    "message": "Show downloaded size while downloading"
+  },
+  "optionsUndoRemove": {
+    "message": "Show undo after removing records"
+  },
+  "optionsEnableNotifications": {
+    "message": "Send system notification when completed"
+  },
+  "optionsSectionSmartTags": {
+    "message": "Smart Tags"
+  },
+  "optionsEnableSmartTags": {
+    "message": "Enable smart tags"
+  },
+  "optionsSmartTagsShowTime": {
+    "message": "Show time tags"
+  },
+  "optionsSmartTagsTimeWindow": {
+    "message": "Time range"
+  },
+  "optionsSmartTagsToday": {
+    "message": "Today only"
+  },
+  "optionsSmartTags7Days": {
+    "message": "Within 7 days"
+  },
+  "optionsSmartTags30Days": {
+    "message": "Within 30 days"
+  },
+  "optionsSmartTagsShowDomain": {
+    "message": "Show domain tags"
+  },
+  "optionsSmartTagsWorkDomains": {
+    "message": "Work domains (comma/newline separated)"
+  },
+  "optionsSmartTagsSocialDomains": {
+    "message": "Social domains (comma/newline separated)"
+  },
+  "optionsSmartTagsHint": {
+    "message": "Hint: provide domain only, e.g. github.com"
+  },
+  "optionsSectionSchedule": {
+    "message": "Tareas programadas"
+  },
+  "optionsEnableSchedule": {
+    "message": "Enable daily scheduled download"
+  },
+  "optionsScheduleTime": {
+    "message": "Run time"
+  },
+  "optionsScheduleUrls": {
+    "message": "Scheduled URLs (comma/newline separated)"
+  },
+  "optionsScheduleUrlsPlaceholder": {
+    "message": "https://example.com/night-build.zip"
+  },
+  "optionsScheduleHint": {
+    "message": "Downloads run every day at the configured time."
+  },
+  "optionsSectionTakeover": {
+    "message": "Control del navegador"
+  },
+  "optionsEnableTakeover": {
+    "message": "Take over download experience (hide native shelf)"
+  },
+  "optionsTakeoverHint": {
+    "message": "When enabled, extension UI is preferred and native behavior can be restored anytime."
+  },
+  "optionsSectionShortcuts": {
+    "message": "Shortcuts"
+  },
+  "optionsShortcutClearCompleted": {
+    "message": "Clear completed records"
+  },
+  "optionsShortcutClearFailed": {
+    "message": "Clear failed records"
+  },
+  "optionsShortcutFocusSearch": {
+    "message": "Focus search (in popup)"
+  },
+  "optionsShortcutCloseModal": {
+    "message": "Close menu/modal"
+  },
+  "optionsCustomizeShortcuts": {
+    "message": "Customize shortcuts..."
+  },
+  "optionsSaveSettings": {
+    "message": "Guardar configuración"
+  },
+  "statusOpenInExtension": {
+    "message": "Please open settings in extension environment"
+  },
+  "statusLoadFailed": {
+    "message": "Failed to load settings"
+  },
+  "statusSaved": {
+    "message": "Saved"
+  },
+  "statusSaveFailed": {
+    "message": "Save failed"
+  }
 }

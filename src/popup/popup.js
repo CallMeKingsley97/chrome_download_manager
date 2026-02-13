@@ -833,12 +833,25 @@ function buildActionMenu(actions) {
     event.stopPropagation();
     const isOpen = wrapper.classList.contains("open");
     closeActionMenus();
+    if (!isOpen) {
+      updateActionMenuDirection(wrapper, trigger, panel);
+    }
     wrapper.classList.toggle("open", !isOpen);
     trigger.setAttribute("aria-expanded", String(!isOpen));
   });
 
   wrapper.append(trigger, panel);
   return wrapper;
+}
+
+function updateActionMenuDirection(wrapper, trigger, panel) {
+  const gap = 6;
+  const triggerRect = trigger.getBoundingClientRect();
+  const panelHeight = panel.offsetHeight || panel.scrollHeight || 0;
+  const spaceBelow = window.innerHeight - triggerRect.bottom;
+  const spaceAbove = triggerRect.top;
+  const shouldOpenUp = spaceBelow < panelHeight + gap && spaceAbove > spaceBelow;
+  wrapper.classList.toggle("open-up", shouldOpenUp);
 }
 
 function closeActionMenus() {

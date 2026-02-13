@@ -625,6 +625,10 @@ body {
   position: relative;
 }
 
+.action-menu.open {
+  z-index: 20;
+}
+
 .action-menu-trigger {
   border: 1px solid var(--border);
   background: var(--card);
@@ -672,6 +676,16 @@ body {
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.action-menu.open-up .action-menu-panel {
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateY(4px);
+}
+
+.action-menu.open-up.open .action-menu-panel {
+  transform: translateY(0);
 }
 
 .action-menu-item {

@@ -829,6 +829,14 @@ function buildActionMenu(actions) {
     panel.appendChild(button);
   });
 
+  const closeCurrentMenu = () => {
+    if (!wrapper.classList.contains("open")) {
+      return;
+    }
+    wrapper.classList.remove("open");
+    trigger.setAttribute("aria-expanded", "false");
+  };
+
   trigger.addEventListener("click", (event) => {
     event.stopPropagation();
     const isOpen = wrapper.classList.contains("open");
@@ -839,6 +847,8 @@ function buildActionMenu(actions) {
     wrapper.classList.toggle("open", !isOpen);
     trigger.setAttribute("aria-expanded", String(!isOpen));
   });
+
+  panel.addEventListener("mouseleave", closeCurrentMenu);
 
   wrapper.append(trigger, panel);
   return wrapper;

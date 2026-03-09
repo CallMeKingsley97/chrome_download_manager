@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = {
 const ALARM_ID = "scheduled-download-default";
 const COMPLETE_NOTIFICATION_PREFIX = "download-complete-";
 const TAKEOVER_NOTIFICATION_ID = "takeover-open-manager";
+let contextMenusSyncInFlight = null;
 
 function t(key, substitutions, fallback = "") {
   try {
@@ -259,36 +260,65 @@ function createContextMenus() {
   try {
     if (!chromeApi || !chromeApi.contextMenus) {
       console.error("ContextMenus API unavailable");
-      return;
+      return Promise.resolve();
     }
 
-    chromeApi.contextMenus.removeAll(() => {
-      chromeApi.contextMenus.create({
+    if (contextMenusSyncInFlight) {
+      return contextMenusSyncInFlight;
+    }
+
+    const definitions = [
+      {
         id: "download-link",
         title: t("contextMenuDownloadLink", undefined, "使用下载管理器下载链接"),
         contexts: ["link"]
-      });
-
-      chromeApi.contextMenus.create({
+      },
+      {
         id: "download-image",
         title: t("contextMenuDownloadImage", undefined, "使用下载管理器下载图片"),
         contexts: ["image"]
-      });
-
-      chromeApi.contextMenus.create({
+      },
+      {
         id: "download-video",
         title: t("contextMenuDownloadVideo", undefined, "使用下载管理器下载视频"),
         contexts: ["video"]
-      });
-
-      chromeApi.contextMenus.create({
+      },
+      {
         id: "download-audio",
         title: t("contextMenuDownloadAudio", undefined, "使用下载管理器下载音频"),
         contexts: ["audio"]
+      }
+    ];
+
+    contextMenusSyncInFlight = new Promise((resolve) => {
+      chromeApi.contextMenus.removeAll(() => {
+        if (chromeApi.runtime && chromeApi.runtime.lastError) {
+          console.warn("contextMenus.removeAll failed", chromeApi.runtime.lastError.message);
+        }
+
+        const createOne = (index) => {
+          if (index >= definitions.length) {
+            resolve();
+            return;
+          }
+          chromeApi.contextMenus.create(definitions[index], () => {
+            if (chromeApi.runtime && chromeApi.runtime.lastError) {
+              console.warn("contextMenus.create failed", definitions[index].id, chromeApi.runtime.lastError.message);
+            }
+            createOne(index + 1);
+          });
+        };
+
+        createOne(0);
       });
+    }).finally(() => {
+      contextMenusSyncInFlight = null;
     });
+
+    return contextMenusSyncInFlight;
   } catch (error) {
     console.error("createContextMenus failed", error);
+    return Promise.resolve();
   }
 }
 
@@ -423,15 +453,11 @@ async function applyTakeoverMode(settings) {
       console.warn("downloads.setShelfEnabled unavailable on this Chrome version");
       return;
     }
-    await new Promise((resolve) => {
-      chromeApi.downloads.setShelfEnabled(!takeover.enabled, () => {
-        const error = chromeApi.runtime && chromeApi.runtime.lastError;
-        if (error) {
-          console.warn("downloads.setShelfEnabled failed", error.message);
-        }
-        resolve();
-      });
-    });
+    chromeApi.downloads.setShelfEnabled(!takeover.enabled);
+    const error = chromeApi.runtime && chromeApi.runtime.lastError;
+    if (error) {
+      console.warn("downloads.setShelfEnabled failed", error.message);
+    }
   } catch (error) {
     console.error("applyTakeoverMode failed", error);
   }
@@ -607,5 +633,4 @@ if (chromeApi && chromeApi.runtime && chromeApi.runtime.onStartup) {
 
 initBadge();
 updateBadge();
-createContextMenus();
 applyRuntimeSettings();

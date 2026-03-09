@@ -2176,10 +2176,10 @@ function generateTags(item) {
     const workDomains = normalizeDomainList(config.workDomains);
     const socialDomains = normalizeDomainList(config.socialDomains);
 
-    if (domain && workDomains.some((d) => domain.includes(d))) {
+    if (domain && workDomains.some((d) => matchesDomainRule(domain, d))) {
       tags.push({ label: t("tagWork", undefined, "办公"), class: "work" });
     }
-    if (domain && socialDomains.some((d) => domain.includes(d))) {
+    if (domain && socialDomains.some((d) => matchesDomainRule(domain, d))) {
       tags.push({ label: t("tagSocial", undefined, "社交"), class: "social" });
     }
   }
@@ -2194,6 +2194,15 @@ function normalizeDomainList(list) {
   return list
     .map((value) => String(value).trim().toLowerCase())
     .filter(Boolean);
+}
+
+function matchesDomainRule(domain, ruleDomain) {
+  const normalizedDomain = String(domain || "").trim().toLowerCase();
+  const normalizedRule = String(ruleDomain || "").trim().toLowerCase();
+  if (!normalizedDomain || !normalizedRule) {
+    return false;
+  }
+  return normalizedDomain === normalizedRule || normalizedDomain.endsWith(`.${normalizedRule}`);
 }
 
 /**

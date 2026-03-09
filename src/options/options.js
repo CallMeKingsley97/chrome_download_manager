@@ -253,8 +253,19 @@ async function loadSettings() {
     const rawStatusFilter = hasStoredSettings ? stored.settings.defaultStatusFilter : DEFAULT_SETTINGS.defaultStatusFilter;
     const rawListSize = hasStoredSettings ? stored.settings.listSize : DEFAULT_SETTINGS.listSize;
     const statusFilterNeedsMigration = normalizeStatusFilter(rawStatusFilter) !== rawStatusFilter;
-    const listSizeNeedsMigration = normalizeListSize(rawListSize) !== Number(rawListSize);
-    if (hasStoredSettings && (statusFilterNeedsMigration || listSizeNeedsMigration)) {
+    const listSizeNeedsMigration = normalizeListSize(rawListSize) !== settings.listSize;
+
+    const settingsChanged =
+      normalizeListSize(rawListSize) !== settings.listSize ||
+      normalizeStatusFilter(rawStatusFilter) !== settings.defaultStatusFilter ||
+      Boolean(stored.settings.showSpeed) !== Boolean(settings.showSpeed) ||
+      Boolean(stored.settings.undoRemove) !== Boolean(settings.undoRemove) ||
+      Boolean(stored.settings.enableNotifications) !== Boolean(settings.enableNotifications) ||
+      JSON.stringify(stored.settings.smartTags || {}) !== JSON.stringify(settings.smartTags) ||
+      JSON.stringify(stored.settings.scheduledDownload || {}) !== JSON.stringify(settings.scheduledDownload) ||
+      JSON.stringify(stored.settings.takeover || {}) !== JSON.stringify(settings.takeover);
+
+    if (hasStoredSettings && (statusFilterNeedsMigration || listSizeNeedsMigration) && settingsChanged) {
       await persistSettings(settings);
     }
   } catch (error) {

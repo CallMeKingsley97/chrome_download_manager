@@ -449,14 +449,17 @@ async function applyTakeoverMode(settings) {
       return;
     }
     const takeover = normalizeTakeover(settings && settings.takeover);
-    if (typeof chromeApi.downloads.setShelfEnabled !== "function") {
-      console.warn("downloads.setShelfEnabled unavailable on this Chrome version");
+    if (typeof chromeApi.downloads.setUiOptions !== "function") {
+      console.warn("downloads.setUiOptions unavailable on this Chrome version");
       return;
     }
-    chromeApi.downloads.setShelfEnabled(!takeover.enabled);
+    const result = chromeApi.downloads.setUiOptions({ enabled: !takeover.enabled });
+    if (result && typeof result.then === "function") {
+      await result;
+    }
     const error = chromeApi.runtime && chromeApi.runtime.lastError;
     if (error) {
-      console.warn("downloads.setShelfEnabled failed", error.message);
+      console.warn("downloads.setUiOptions failed", error.message);
     }
   } catch (error) {
     console.error("applyTakeoverMode failed", error);

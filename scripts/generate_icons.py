@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 
-ROOT = Path(r"D:\code\extention\chrome_download_manager\src\icons")
+ROOT = Path(__file__).resolve().parents[1] / "src" / "icons"
 SIZE = 128
 
 

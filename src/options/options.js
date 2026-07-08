@@ -226,7 +226,8 @@ async function loadSettings() {
       stored = await chromeStorageGet(["settings"]);
     }
 
-    const settings = mergeSettings(stored.settings);
+    const storedSettings = stored && stored.settings && typeof stored.settings === "object" ? stored.settings : null;
+    const settings = mergeSettings(storedSettings);
     elements.listSize.value = String(settings.listSize);
     elements.defaultStatusFilter.value = settings.defaultStatusFilter;
     elements.showSpeed.checked = Boolean(settings.showSpeed);
@@ -249,23 +250,24 @@ async function loadSettings() {
     updateSmartTagControls();
     updateScheduleControls();
 
-    const hasStoredSettings = Boolean(stored && stored.settings);
-    const rawStatusFilter = hasStoredSettings ? stored.settings.defaultStatusFilter : DEFAULT_SETTINGS.defaultStatusFilter;
-    const rawListSize = hasStoredSettings ? stored.settings.listSize : DEFAULT_SETTINGS.listSize;
+    const hasStoredSettings = Boolean(storedSettings);
+    const rawStatusFilter = hasStoredSettings ? storedSettings.defaultStatusFilter : DEFAULT_SETTINGS.defaultStatusFilter;
+    const rawListSize = hasStoredSettings ? storedSettings.listSize : DEFAULT_SETTINGS.listSize;
     const statusFilterNeedsMigration = normalizeStatusFilter(rawStatusFilter) !== rawStatusFilter;
     const listSizeNeedsMigration = normalizeListSize(rawListSize) !== settings.listSize;
 
-    const settingsChanged =
+    const settingsChanged = hasStoredSettings && (
       normalizeListSize(rawListSize) !== settings.listSize ||
       normalizeStatusFilter(rawStatusFilter) !== settings.defaultStatusFilter ||
-      Boolean(stored.settings.showSpeed) !== Boolean(settings.showSpeed) ||
-      Boolean(stored.settings.undoRemove) !== Boolean(settings.undoRemove) ||
-      Boolean(stored.settings.enableNotifications) !== Boolean(settings.enableNotifications) ||
-      JSON.stringify(stored.settings.smartTags || {}) !== JSON.stringify(settings.smartTags) ||
-      JSON.stringify(stored.settings.scheduledDownload || {}) !== JSON.stringify(settings.scheduledDownload) ||
-      JSON.stringify(stored.settings.takeover || {}) !== JSON.stringify(settings.takeover);
+      Boolean(storedSettings.showSpeed) !== Boolean(settings.showSpeed) ||
+      Boolean(storedSettings.undoRemove) !== Boolean(settings.undoRemove) ||
+      Boolean(storedSettings.enableNotifications) !== Boolean(settings.enableNotifications) ||
+      JSON.stringify(storedSettings.smartTags || {}) !== JSON.stringify(settings.smartTags) ||
+      JSON.stringify(storedSettings.scheduledDownload || {}) !== JSON.stringify(settings.scheduledDownload) ||
+      JSON.stringify(storedSettings.takeover || {}) !== JSON.stringify(settings.takeover)
+    );
 
-    if (hasStoredSettings && (statusFilterNeedsMigration || listSizeNeedsMigration) && settingsChanged) {
+    if (settingsChanged || statusFilterNeedsMigration || listSizeNeedsMigration) {
       await persistSettings(settings);
     }
   } catch (error) {

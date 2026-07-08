@@ -537,10 +537,12 @@ async function loadDownloads() {
       }, 180);
     }
 
+    const listSize = normalizeListSize(state.settings.listSize);
     const items = await chromeDownloadsSearch({
-      orderBy: ["-startTime"]
+      orderBy: ["-startTime"],
+      limit: listSize
     });
-    const limitedItems = (items || []).slice(0, normalizeListSize(state.settings.listSize));
+    const limitedItems = items || [];
     const nextSignature = createDownloadsSignature(limitedItems);
     const shouldRender = !state.hasLoadedOnce || state.lastDownloadsSignature !== nextSignature;
     state.downloads = limitedItems;

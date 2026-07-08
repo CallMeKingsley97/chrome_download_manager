@@ -1,7 +1,7 @@
 # 📥 Download Manager Lite
 
 <p align="center">
-  <img src="icons/icon128.png" alt="Logo" width="128" height="128" onerror="this.style.display='none'">
+  <img src="src/icons/icon128.png" alt="Logo" width="128" height="128" onerror="this.style.display='none'">
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 
 ### ⚡️ Powerful Management
 - **Real-time Monitoring**: View progress, download speed, and estimated time remaining.
-- **Smart Actions**: Pause, cancel, retry, open files, or reveal in Finder/Explorer.
+- **Smart Actions**: Cancel, retry, open files, or reveal in Finder/Explorer.
 - **Live Badge**: Extension icon shows the count of active downloads in real-time.
 
 ### 🆕 Unique Capabilities
@@ -45,6 +45,14 @@
 3. Enable **"Developer mode"** in the top right corner.
 4. Click **"Load unpacked"**.
 5. Select the project root directory.
+
+### Packaging
+
+```bash
+python3 scripts/package_extension.py
+```
+
+The package is generated under `dist/` and contains only runtime extension files, excluding PRD documents, debugging assets, and local system files.
 
 ## 🛠 Usage Tips
 

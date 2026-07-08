@@ -1,7 +1,7 @@
 # 📥 Download Manager Lite
 
 <p align="center">
-  <img src="icons/icon128.png" alt="Logo" width="128" height="128" onerror="this.style.display='none'">
+  <img src="src/icons/icon128.png" alt="Logo" width="128" height="128" onerror="this.style.display='none'">
 </p>
 
 <p align="center">
@@ -25,7 +25,7 @@
 
 ### ⚡️ 高效下载管理
 - **实时监控**: 动态显示下载进度、实时速度和剩余时间。
-- **智能操作**: 支持暂停、取消、重试下载，一键打开文件或所在文件夹。
+- **智能操作**: 支持取消、重试下载，一键打开文件或所在文件夹。
 - **图标徽章**: 浏览器工具栏图标实时显示正在进行的下载任务数。
 
 ### 🆕 独家特色功能
@@ -46,6 +46,14 @@
 3. 开启右上角的 **"开发者模式"**。
 4. 点击 **"加载已解压的扩展程序"**。
 5. 选择项目根目录即可。
+
+### 打包发布
+
+```bash
+python3 scripts/package_extension.py
+```
+
+生成的发布包位于 `dist/`，只包含扩展运行所需文件，不包含 PRD、调试资料或本地系统文件。
 
 ### 🛠 使用技巧
 - **搜索**: 按下 `/` 键即可快速开始搜索。

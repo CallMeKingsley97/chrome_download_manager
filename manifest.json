@@ -21,25 +21,14 @@
   "background": {
     "service_worker": "src/background/background.js"
   },
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "src/icons/*.png"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
-  ],
   "permissions": [
     "downloads",
-    "downloads.shelf",
     "downloads.open",
+    "downloads.ui",
     "storage",
     "notifications",
     "contextMenus",
-    "alarms",
-    "tabs"
+    "alarms"
   ],
   "commands": {
     "clear-completed": {
